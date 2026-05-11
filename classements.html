@@ -18,9 +18,12 @@
             }
         }
     </script>
- <header class="bg-gradient-to-r from-bleu-nuit to-indigo-900 text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md">
+</head>
+<body class="bg-gray-50 text-gray-800 pb-32 md:pb-0 font-sans">
+
+    <header class="bg-gradient-to-r from-bleu-nuit to-indigo-900 text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md">
         
-        <img src="logo intra.png" alt="Logo Intras" class="w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20">
+        <img src="logo intra.png" alt="Logo Intras" class="w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20" onerror="this.style.display='none'">
         
         <div class="text-center">
             <h1 class="text-4xl font-aladin tracking-widest text-or mt-2">INTRA****</h1>
@@ -34,7 +37,7 @@
             <a href="classements.html" class="hover:text-or transition-colors">Classements</a>
         </div>
         
-        <img src="logo_mads.png" alt="Logo Mads" class="md:hidden w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20">
+        <img src="logo_mads.png" alt="Logo Mads" class="md:hidden w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20" onerror="this.style.display='none'">
         
     </header>
 
@@ -181,11 +184,9 @@
                     selectMenu.innerHTML += `<option value="${nomPoule}">Poule ${nomPoule}</option>`;
                 });
 
-                // 🌟 NOUVEAUTÉ ICI : LECTURE DE L'URL 🌟
                 const urlParams = new URLSearchParams(window.location.search);
                 const pouleDemandee = urlParams.get('poule');
                 
-                // Si l'URL contient une poule (ex: ?poule=A) ET que cette poule existe, on la sélectionne
                 if (pouleDemandee && toutesLesDonneesPoules[pouleDemandee]) {
                     selectMenu.value = pouleDemandee;
                 }

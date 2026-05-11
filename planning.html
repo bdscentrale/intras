@@ -19,13 +19,10 @@
             }
         }
     </script>
-    
-    <body class="bg-gray-50 text-gray-800 pb-32 md:pb-0 font-sans">
+</head>
+<body class="bg-gray-50 text-gray-800 pb-32 md:pb-0 font-sans">
 
     <header class="bg-gradient-to-r from-bleu-nuit to-indigo-900 text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md">
-        
-        <img src="logo intra.png" alt="Logo Intras" class="w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20">
- <header class="bg-gradient-to-r from-bleu-nuit to-indigo-900 text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md">
         
         <img src="logo intra.png" alt="Logo Intras" class="w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20">
         
@@ -33,6 +30,7 @@
             <h1 class="text-4xl font-aladin tracking-widest text-or mt-2">INTRA****</h1>
             <p class="text-xs text-gray-300">Du 18 mai au 11 juin</p>
         </div>
+        
         <div class="hidden md:flex space-x-6 font-bold text-sm items-center">
             <a href="index.html" class="text-or">Accueil</a>
             <a href="planning.html" class="hover:text-or transition-colors">Planning</a>
@@ -52,11 +50,11 @@
             <div class="flex space-x-2">
                 <select id="filtre-date" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
                     <option value="Toutes" selected>Toutes les dates</option>
-                    </select>
+                </select>
 
                 <select id="filtre-poule" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
                     <option value="Toutes" selected>Toutes les poules</option>
-                    </select>
+                </select>
             </div>
         </section>
 
@@ -74,10 +72,9 @@
     </nav>
 
     <script>
-        // 🚨 N'OUBLIE PAS DE RECOLLER TON LIEN ICI ! 🚨
         const lienGoogleSheet = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4HyMZ9cf-z5kWEIc_8G07U2uHUR5TFjArrRc1VzoXN_-p-jHAso-6S2g60FxUas9KoyLT7o_ZTWPq/pub?output=csv';
 
-        let tousLesMatchs = []; // Cette variable va stocker tous nos matchs en mémoire
+        let tousLesMatchs = [];
 
         async function chargerMatchs() {
             const container = document.getElementById('matchs-container');
@@ -88,14 +85,13 @@
                 const lignes = donneesBrutes.split('\n');
                 
                 tousLesMatchs = []; 
-                let datesDisponibles = new Set(); // Pour stocker les dates sans doublons
-                let poulesDisponibles = new Set(); // Pour stocker les poules sans doublons
+                let datesDisponibles = new Set(); 
+                let poulesDisponibles = new Set(); 
 
                 for (let i = 1; i < lignes.length; i++) {
                     const colonnes = lignes[i].split(',');
 
                     if (colonnes.length >= 7 && colonnes[0].trim() !== "") {
-                        // On crée un petit objet pour chaque match
                         const match = {
                             date: colonnes[0].trim(),
                             heure: colonnes[1].trim(),
@@ -107,16 +103,12 @@
                         };
                         tousLesMatchs.push(match);
                         
-                        // On garde la date et la poule de côté pour nos filtres
                         datesDisponibles.add(match.date);
                         poulesDisponibles.add(match.poule);
                     }
                 }
 
-                // 1. On remplit les menus déroulants
                 remplirFiltres(datesDisponibles, poulesDisponibles);
-                
-                // 2. On affiche tous les matchs par défaut
                 afficherMatchs(tousLesMatchs);
 
             } catch (erreur) {
@@ -125,26 +117,22 @@
             }
         }
 
-        // --- FONCTION POUR REMPLIR LES MENUS DÉROULANTS ---
         function remplirFiltres(dates, poules) {
             const selectDate = document.getElementById('filtre-date');
             const selectPoule = document.getElementById('filtre-poule');
 
-            // On ajoute chaque date dans le menu
             dates.forEach(date => {
                 selectDate.innerHTML += `<option value="${date}">${date}</option>`;
             });
 
-            // On trie les poules par ordre alphabétique et on les ajoute
             Array.from(poules).sort().forEach(poule => {
                 selectPoule.innerHTML += `<option value="${poule}">Poule ${poule}</option>`;
             });
         }
 
-        // --- FONCTION POUR AFFICHER LES MATCHS À L'ÉCRAN ---
         function afficherMatchs(listeDeMatchs) {
             const container = document.getElementById('matchs-container');
-            container.innerHTML = ''; // On vide l'écran
+            container.innerHTML = ''; 
 
             if (listeDeMatchs.length === 0) {
                 container.innerHTML = '<p class="text-center text-gray-500 py-8">Aucun match trouvé pour ces critères.</p>';
@@ -169,23 +157,19 @@
             });
         }
 
-        // --- FONCTION QUI SE DÉCLENCHE QUAND ON TOUCHE AUX FILTRES ---
         function filtrerMatchs() {
             const dateChoisie = document.getElementById('filtre-date').value;
             const pouleChoisie = document.getElementById('filtre-poule').value;
 
-            // On garde seulement les matchs qui correspondent aux choix
             const matchsFiltres = tousLesMatchs.filter(match => {
                 const dateOk = (dateChoisie === 'Toutes') || (match.date === dateChoisie);
                 const pouleOk = (pouleChoisie === 'Toutes') || (match.poule === pouleChoisie);
                 return dateOk && pouleOk;
             });
 
-            // On affiche le nouveau résultat
             afficherMatchs(matchsFiltres);
         }
 
-        // On lance la machine au démarrage !
         chargerMatchs();
     </script>
 </body>

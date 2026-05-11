@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intr'Aladin - Planning</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aladin&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { 'bleu-nuit': '#0B132B', 'or': '#F59E0B' },
+                    fontFamily: { 'aladin': ['"Aladin"', 'cursive'], 'sans': ['ui-sans-serif', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 pb-20 md:pb-0 font-sans">
+
+    <header class="bg-bleu-nuit text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md sticky top-0 z-40">
+        <div class="w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 1</div>
+        <div class="text-center">
+            <h1 class="text-4xl font-aladin tracking-widest text-or mt-2">INTR'ALADIN</h1>
+            <p class="text-xs text-gray-300">Du 19 mai au 14 juin</p>
+        </div>
+        <div class="hidden md:flex space-x-6 font-bold text-sm items-center">
+            <a href="index.html" class="hover:text-or transition-colors">Accueil</a>
+            <a href="planning.html" class="text-or">Planning</a>
+            <a href="equipes.html" class="hover:text-or transition-colors">Équipes</a>
+            <a href="staff.html" class="hover:text-or transition-colors">Staff</a>
+            <a href="classements.html" class="hover:text-or transition-colors">Scores</a>
+        </div>
+        <div class="md:hidden w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 2</div>
+    </header>
+
+    <main class="p-4 mt-4 space-y-6 max-w-4xl mx-auto">
+        
+        <section class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <h2 class="font-bold text-xl text-bleu-nuit">PLANNING DES MATCHS</h2>
+            <div class="flex space-x-2">
+                <select id="filtre-date" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
+                    <option value="Toutes" selected>Toutes les dates</option>
+                    </select>
+
+                <select id="filtre-poule" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
+                    <option value="Toutes" selected>Toutes les poules</option>
+                    </select>
+            </div>
+        </section>
+
+        <section id="matchs-container" class="space-y-4">
+            <p class="text-center text-gray-400 animate-pulse">Chargement du planning...</p>
+        </section>
+    </main>
+
+    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+        <a href="index.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏠</span><span class="text-[10px] mt-1">ACCUEIL</span></a>
+        <a href="planning.html" class="flex flex-col items-center text-or"><span class="text-xl">📅</span><span class="text-[10px] font-bold mt-1">PLANNING</span></a>
+        <a href="equipes.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">👥</span><span class="text-[10px] mt-1">ÉQUIPES</span></a>
+        <a href="staff.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🦺</span><span class="text-[10px] mt-1">STAFF</span></a>
+        <a href="classements.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">⭐</span><span class="text-[10px] mt-1">SCORES</span></a>
+    </nav>
+
+    <script>
+        // 🚨 N'OUBLIE PAS DE RECOLLER TON LIEN ICI ! 🚨
+        const lienGoogleSheet = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4HyMZ9cf-z5kWEIc_8G07U2uHUR5TFjArrRc1VzoXN_-p-jHAso-6S2g60FxUas9KoyLT7o_ZTWPq/pub?output=csv';
+
+        let tousLesMatchs = []; // Cette variable va stocker tous nos matchs en mémoire
+
+        async function chargerMatchs() {
+            const container = document.getElementById('matchs-container');
+            
+            try {
+                const reponse = await fetch(lienGoogleSheet);
+                const donneesBrutes = await reponse.text();
+                const lignes = donneesBrutes.split('\n');
+                
+                tousLesMatchs = []; 
+                let datesDisponibles = new Set(); // Pour stocker les dates sans doublons
+                let poulesDisponibles = new Set(); // Pour stocker les poules sans doublons
+
+                for (let i = 1; i < lignes.length; i++) {
+                    const colonnes = lignes[i].split(',');
+
+                    if (colonnes.length >= 7 && colonnes[0].trim() !== "") {
+                        // On crée un petit objet pour chaque match
+                        const match = {
+                            date: colonnes[0].trim(),
+                            heure: colonnes[1].trim(),
+                            sport: colonnes[2].trim(),
+                            poule: colonnes[3].trim(),
+                            eq1: colonnes[4].trim(),
+                            eq2: colonnes[5].trim(),
+                            lieu: colonnes[6].trim()
+                        };
+                        tousLesMatchs.push(match);
+                        
+                        // On garde la date et la poule de côté pour nos filtres
+                        datesDisponibles.add(match.date);
+                        poulesDisponibles.add(match.poule);
+                    }
+                }
+
+                // 1. On remplit les menus déroulants
+                remplirFiltres(datesDisponibles, poulesDisponibles);
+                
+                // 2. On affiche tous les matchs par défaut
+                afficherMatchs(tousLesMatchs);
+
+            } catch (erreur) {
+                console.error("Erreur de chargement :", erreur);
+                container.innerHTML = '<p class="text-red-500 text-center font-bold">Erreur : Impossible de charger le planning.</p>';
+            }
+        }
+
+        // --- FONCTION POUR REMPLIR LES MENUS DÉROULANTS ---
+        function remplirFiltres(dates, poules) {
+            const selectDate = document.getElementById('filtre-date');
+            const selectPoule = document.getElementById('filtre-poule');
+
+            // On ajoute chaque date dans le menu
+            dates.forEach(date => {
+                selectDate.innerHTML += `<option value="${date}">${date}</option>`;
+            });
+
+            // On trie les poules par ordre alphabétique et on les ajoute
+            Array.from(poules).sort().forEach(poule => {
+                selectPoule.innerHTML += `<option value="${poule}">Poule ${poule}</option>`;
+            });
+        }
+
+        // --- FONCTION POUR AFFICHER LES MATCHS À L'ÉCRAN ---
+        function afficherMatchs(listeDeMatchs) {
+            const container = document.getElementById('matchs-container');
+            container.innerHTML = ''; // On vide l'écran
+
+            if (listeDeMatchs.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-8">Aucun match trouvé pour ces critères.</p>';
+                return;
+            }
+
+            listeDeMatchs.forEach(match => {
+                const carteHTML = `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow">
+                        <div class="text-4xl bg-orange-50 p-3 rounded-full mr-4 border border-orange-100 flex-shrink-0">${match.sport}</div>
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start">
+                                <span class="font-bold text-bleu-nuit">POULE ${match.poule}</span>
+                                <span class="text-xs font-bold text-or bg-orange-50 px-2 py-1 rounded">${match.date} - ${match.heure}</span>
+                            </div>
+                            <p class="text-sm mt-1 text-gray-600"><strong>${match.eq1}</strong> VS <strong>${match.eq2}</strong></p>
+                            <p class="text-xs text-gray-400 mt-1">📍 ${match.lieu}</p>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += carteHTML;
+            });
+        }
+
+        // --- FONCTION QUI SE DÉCLENCHE QUAND ON TOUCHE AUX FILTRES ---
+        function filtrerMatchs() {
+            const dateChoisie = document.getElementById('filtre-date').value;
+            const pouleChoisie = document.getElementById('filtre-poule').value;
+
+            // On garde seulement les matchs qui correspondent aux choix
+            const matchsFiltres = tousLesMatchs.filter(match => {
+                const dateOk = (dateChoisie === 'Toutes') || (match.date === dateChoisie);
+                const pouleOk = (pouleChoisie === 'Toutes') || (match.poule === pouleChoisie);
+                return dateOk && pouleOk;
+            });
+
+            // On affiche le nouveau résultat
+            afficherMatchs(matchsFiltres);
+        }
+
+        // On lance la machine au démarrage !
+        chargerMatchs();
+    </script>
+</body>
+</html>

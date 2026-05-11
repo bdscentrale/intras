@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intr'Aladin - Classements</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aladin&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { 'bleu-nuit': '#0B132B', 'or': '#F59E0B' },
+                    fontFamily: { 'aladin': ['"Aladin"', 'cursive'], 'sans': ['ui-sans-serif', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 pb-20 md:pb-0 font-sans">
+
+    <header class="bg-bleu-nuit text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md sticky top-0 z-40">
+        <div class="w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 1</div>
+        <div class="text-center">
+            <h1 class="text-4xl font-aladin tracking-widest text-or mt-2">INTR'ALADIN</h1>
+            <p class="text-xs text-gray-300">Du 19 mai au 14 juin</p>
+        </div>
+        <div class="hidden md:flex space-x-6 font-bold text-sm items-center">
+            <a href="index.html" class="hover:text-or transition-colors">Accueil</a>
+            <a href="planning.html" class="hover:text-or transition-colors">Planning</a>
+            <a href="equipes.html" class="hover:text-or transition-colors">Équipes</a>
+            <a href="staff.html" class="hover:text-or transition-colors">Staff</a>
+            <a href="classements.html" class="text-or">Classements</a>
+        </div>
+        <div class="md:hidden w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 2</div>
+    </header>
+
+    <main class="p-4 mt-4 space-y-6 max-w-4xl mx-auto">
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+            <h2 class="font-bold text-2xl text-bleu-nuit uppercase tracking-wider">Classements & Résultats</h2>
+            <p class="text-gray-500 text-sm mt-1">Les tableaux sont mis à jour automatiquement avec les scores.</p>
+        </section>
+
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <label for="filtre-poule" class="font-bold text-bleu-nuit mr-4 flex-shrink-0">Trier par :</label>
+            <select id="filtre-poule" onchange="afficherPoules()" class="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5 outline-none font-bold uppercase tracking-wider cursor-pointer">
+                <option value="Toutes">Toutes les poules</option>
+            </select>
+        </section>
+
+        <div id="classements-container" class="space-y-10">
+            <p class="text-center text-gray-400 animate-pulse">Calcul des classements en cours...</p>
+        </div>
+    </main>
+
+    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+        <a href="index.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏠</span><span class="text-[10px] mt-1">ACCUEIL</span></a>
+        <a href="planning.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">📅</span><span class="text-[10px] mt-1">PLANNING</span></a>
+        <a href="equipes.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">👥</span><span class="text-[10px] mt-1">ÉQUIPES</span></a>
+        <a href="staff.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🦺</span><span class="text-[10px] mt-1">STAFF</span></a>
+        <a href="classements.html" class="flex flex-col items-center text-or"><span class="text-xl">🏆</span><span class="text-[10px] font-bold mt-1 uppercase">Classements</span></a>
+    </nav>
+
+    <script>
+        const lienScores = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrPajxY5p2VL-Yc0SjGmHHORVuvg_9g5wRXUzQxwSnQ9Q8tEmSi01V9Xb1xM0eQ5HdG9tbJqmzw0CX/pub?output=csv'; 
+        const lienEquipes = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS8Y_nW7rxI_qmpjOFAfA_ajqmzq9beBImqjUN85CfDs0Hxq8aSk7zEq_BrFkMPPX2IhvbaJZusCHxN/pub?output=csv'; 
+
+        const PTS_VICTOIRE = 3;
+        const PTS_NUL = 1;
+        const PTS_DEFAITE = 0;
+
+        let toutesLesDonneesPoules = {};
+
+        function convertirLienDrive(url) {
+            if (!url || url.trim() === "") return "https://via.placeholder.com/150?text=Logo";
+            const regex = /[-\w]{25,}/; 
+            const match = url.match(regex);
+            if (match) return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w200`; 
+            return url; 
+        }
+
+        async function genererClassements() {
+            const container = document.getElementById('classements-container');
+            try {
+                let dictionnaireLogos = {};
+                try {
+                    const repEquipes = await fetch(lienEquipes);
+                    const csvEquipes = await repEquipes.text();
+                    const lignesEquipes = csvEquipes.split('\n');
+                    const sepEq = (lignesEquipes[0].split(';').length > lignesEquipes[0].split(',').length) ? ';' : ',';
+
+                    for (let i = 1; i < lignesEquipes.length; i++) {
+                        const cols = lignesEquipes[i].split(sepEq);
+                        if (cols.length >= 2 && cols[0].trim() !== "") {
+                            dictionnaireLogos[cols[0].trim().toLowerCase()] = convertirLienDrive(cols[1].trim());
+                        }
+                    }
+                } catch (errLogos) { console.log("Erreur logos"); }
+
+                function getLogo(nomEquipe) {
+                    return dictionnaireLogos[nomEquipe.trim().toLowerCase()] || 'https://via.placeholder.com/150/f3f4f6/9ca3af?text=' + nomEquipe.charAt(0).toUpperCase();
+                }
+
+                const reponse = await fetch(lienScores);
+                const csv = await reponse.text();
+                const lignes = csv.split('\n');
+                const separateur = (lignes[0].split(';').length > lignes[0].split(',').length) ? ';' : ',';
+
+                toutesLesDonneesPoules = {};
+
+                for (let i = 1; i < lignes.length; i++) {
+                    if (lignes[i].trim() === "") continue;
+                    const cols = lignes[i].split(separateur);
+
+                    if (cols.length >= 7 && cols[0].trim() !== "") {
+                        const date = cols[0].trim();
+                        const heure = cols[1].trim();
+                        const nomPoule = cols[2].trim();
+                        const eq1 = cols[3].trim();
+                        const score1Str = cols[4].trim();
+                        const score2Str = cols[5].trim();
+                        const eq2 = cols[6].trim();
+
+                        if (!toutesLesDonneesPoules[nomPoule]) {
+                            toutesLesDonneesPoules[nomPoule] = { classement: {}, matchs: [] };
+                        }
+
+                        [eq1, eq2].forEach(eq => {
+                            if (eq !== "" && !toutesLesDonneesPoules[nomPoule].classement[eq]) {
+                                toutesLesDonneesPoules[nomPoule].classement[eq] = { 
+                                    nom: eq, pts: 0, joues: 0, victoires: 0, nuls: 0, defaites: 0, butsPour: 0, butsContre: 0, diff: 0,
+                                    logo: getLogo(eq)
+                                };
+                            }
+                        });
+
+                        const score1 = parseInt(score1Str);
+                        const score2 = parseInt(score2Str);
+                        const matchJoue = !isNaN(score1) && !isNaN(score2);
+
+                        toutesLesDonneesPoules[nomPoule].matchs.push({ 
+                            date, heure, eq1, eq2, score1Str, score2Str, matchJoue,
+                            logo1: getLogo(eq1), logo2: getLogo(eq2) 
+                        });
+
+                        if (matchJoue && eq1 !== "" && eq2 !== "") {
+                            let stat1 = toutesLesDonneesPoules[nomPoule].classement[eq1];
+                            let stat2 = toutesLesDonneesPoules[nomPoule].classement[eq2];
+
+                            stat1.joues += 1; stat2.joues += 1;
+                            stat1.butsPour += score1; stat1.butsContre += score2;
+                            stat2.butsPour += score2; stat2.butsContre += score1;
+
+                            if (score1 > score2) {
+                                stat1.victoires += 1; stat1.pts += PTS_VICTOIRE;
+                                stat2.defaites += 1; stat2.pts += PTS_DEFAITE;
+                            } else if (score2 > score1) {
+                                stat2.victoires += 1; stat2.pts += PTS_VICTOIRE;
+                                stat1.defaites += 1; stat1.pts += PTS_DEFAITE;
+                            } else {
+                                stat1.nuls += 1; stat1.pts += PTS_NUL;
+                                stat2.nuls += 1; stat2.pts += PTS_NUL;
+                            }
+
+                            stat1.diff = stat1.butsPour - stat1.butsContre;
+                            stat2.diff = stat2.butsPour - stat2.butsContre;
+                        }
+                    }
+                }
+
+                if (Object.keys(toutesLesDonneesPoules).length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-400">Aucun résultat disponible.</p>';
+                    return;
+                }
+
+                const selectMenu = document.getElementById('filtre-poule');
+                Object.keys(toutesLesDonneesPoules).sort().forEach(nomPoule => {
+                    selectMenu.innerHTML += `<option value="${nomPoule}">Poule ${nomPoule}</option>`;
+                });
+
+                // 🌟 NOUVEAUTÉ ICI : LECTURE DE L'URL 🌟
+                const urlParams = new URLSearchParams(window.location.search);
+                const pouleDemandee = urlParams.get('poule');
+                
+                // Si l'URL contient une poule (ex: ?poule=A) ET que cette poule existe, on la sélectionne
+                if (pouleDemandee && toutesLesDonneesPoules[pouleDemandee]) {
+                    selectMenu.value = pouleDemandee;
+                }
+
+                afficherPoules();
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<p class="text-center text-red-500 font-bold">Erreur de chargement des résultats.</p>';
+            }
+        }
+
+        function afficherPoules() {
+            const container = document.getElementById('classements-container');
+            const pouleChoisie = document.getElementById('filtre-poule').value;
+            container.innerHTML = ''; 
+
+            Object.keys(toutesLesDonneesPoules).sort().forEach(nomPoule => {
+                
+                if (pouleChoisie !== 'Toutes' && nomPoule !== pouleChoisie) return;
+
+                const poule = toutesLesDonneesPoules[nomPoule];
+                
+                const classementTrie = Object.values(poule.classement).sort((a, b) => {
+                    if (b.pts !== a.pts) return b.pts - a.pts;
+                    return b.diff - a.diff;
+                });
+
+                let htmlTableau = '';
+                classementTrie.forEach((eq, index) => {
+                    const isFirst = index === 0;
+                    htmlTableau += `
+                        <tr class="border-b border-gray-100 last:border-0 ${isFirst ? 'bg-orange-50/50' : ''}">
+                            <td class="py-3 px-3 text-center text-gray-400 font-bold">${index + 1}</td>
+                            <td class="py-3 px-2 text-left">
+                                <div class="flex items-center space-x-3">
+                                    <img src="${eq.logo}" class="w-12 h-12 rounded-full object-cover border border-gray-200 bg-white shadow-sm flex-shrink-0" onerror="this.src='https://via.placeholder.com/150/f3f4f6/9ca3af?text=${eq.nom.charAt(0)}'">
+                                    <span class="font-bold text-bleu-nuit uppercase truncate">${eq.nom}</span>
+                                </div>
+                            </td>
+                            <td class="py-3 px-2 text-center font-bold text-lg text-or">${eq.pts}</td>
+                            <td class="py-3 px-2 text-center text-gray-500 text-xs">${eq.joues}</td>
+                            <td class="py-3 px-2 text-center text-gray-500 text-xs hidden sm:table-cell">${eq.victoires}</td>
+                            <td class="py-3 px-2 text-center text-gray-500 text-xs hidden sm:table-cell">${eq.nuls}</td>
+                            <td class="py-3 px-2 text-center text-gray-500 text-xs hidden sm:table-cell">${eq.defaites}</td>
+                            <td class="py-3 px-2 text-center font-bold text-xs ${eq.diff > 0 ? 'text-green-500' : (eq.diff < 0 ? 'text-red-500' : 'text-gray-500')}">${eq.diff > 0 ? '+'+eq.diff : eq.diff}</td>
+                        </tr>
+                    `;
+                });
+
+                let htmlMatchs = '';
+                poule.matchs.forEach(match => {
+                    let affichageCentral = '';
+                    if (match.matchJoue) {
+                        affichageCentral = `<div class="bg-bleu-nuit text-white font-bold px-4 py-2 rounded-lg flex items-center justify-center min-w-[80px] text-lg shadow-sm tracking-widest">${match.score1Str} - ${match.score2Str}</div>`;
+                    } else {
+                        affichageCentral = `<div class="bg-gray-100 text-gray-500 text-xs font-bold px-3 py-2 rounded-lg flex flex-col items-center justify-center min-w-[80px] uppercase border border-gray-200 leading-tight"><span>${match.date}</span><span>${match.heure}</span></div>`;
+                    }
+
+                    htmlMatchs += `
+                        <div class="flex items-center justify-between py-4 border-b border-gray-100/50 last:border-0 hover:bg-gray-50 px-2 transition-colors">
+                            <div class="w-1/3 flex items-center justify-end space-x-3 pr-4">
+                                <span class="font-bold text-base md:text-lg text-gray-800 truncate text-right">${match.eq1}</span>
+                                <img src="${match.logo1}" class="w-12 h-12 rounded-full object-cover border border-gray-200 bg-white shadow-sm flex-shrink-0" onerror="this.style.display='none'">
+                            </div>
+                            
+                            <div class="w-auto flex-shrink-0 z-10">${affichageCentral}</div>
+                            
+                            <div class="w-1/3 flex items-center justify-start space-x-3 pl-4">
+                                <img src="${match.logo2}" class="w-12 h-12 rounded-full object-cover border border-gray-200 bg-white shadow-sm flex-shrink-0" onerror="this.style.display='none'">
+                                <span class="font-bold text-base md:text-lg text-gray-800 truncate text-left">${match.eq2}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML += `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+                        <div class="bg-gray-100 text-gray-600 p-3 text-sm font-bold uppercase tracking-widest border-b border-gray-200">
+                            Poule ${nomPoule}
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="text-gray-400 text-[10px] uppercase border-b border-gray-100">
+                                    <tr>
+                                        <th class="py-2 px-3 w-8 text-center font-medium">#</th>
+                                        <th class="py-2 px-2 text-left font-medium">Équipe</th>
+                                        <th class="py-2 px-2 text-center font-bold text-gray-600">Pts</th>
+                                        <th class="py-2 px-2 text-center font-medium" title="Matchs Joués">J</th>
+                                        <th class="py-2 px-2 text-center font-medium hidden sm:table-cell" title="Victoires">V</th>
+                                        <th class="py-2 px-2 text-center font-medium hidden sm:table-cell" title="Nuls">N</th>
+                                        <th class="py-2 px-2 text-center font-medium hidden sm:table-cell" title="Défaites">D</th>
+                                        <th class="py-2 px-2 text-center font-medium" title="Différence">Diff</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${htmlTableau}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="bg-gray-50 text-gray-400 p-2 text-xs font-bold uppercase tracking-widest border-t border-b border-gray-100 text-center">
+                            Résultats
+                        </div>
+
+                        <div class="p-2">
+                            ${htmlMatchs}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        genererClassements();
+    </script>
+</body>
+</html>

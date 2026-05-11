@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intr'Aladin - Arbitrage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aladin&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { 'bleu-nuit': '#0B132B', 'or': '#F59E0B' },
+                    fontFamily: { 'aladin': ['"Aladin"', 'cursive'], 'sans': ['ui-sans-serif', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 pb-20 md:pb-0 font-sans">
+
+    <header class="bg-bleu-nuit text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md sticky top-0 z-40">
+        <div class="w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 1</div>
+        <div class="text-center">
+            <h1 class="text-4xl font-aladin tracking-widest text-or mt-2">INTR'ALADIN</h1>
+            <p class="text-xs text-gray-300">Zone Arbitrage</p>
+        </div>
+        <div class="hidden md:flex space-x-6 font-bold text-sm items-center">
+            <a href="index.html" class="hover:text-or transition-colors">Accueil</a>
+            <a href="planning.html" class="hover:text-or transition-colors">Planning</a>
+            <a href="equipes.html" class="hover:text-or transition-colors">Équipes</a>
+            <a href="staff.html" class="text-or">Staff</a>
+            <a href="classements.html" class="hover:text-or transition-colors">Scores</a>
+        </div>
+        <div class="md:hidden w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 2</div>
+    </header>
+
+    <main class="p-4 mt-4 space-y-6 max-w-4xl mx-auto">
+        
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+            <h2 class="font-bold text-xl text-bleu-nuit uppercase tracking-wider">Arbitres</h2>
+            <p class="text-gray-500 text-sm mt-1">Clique sur ton nom pour voir tes matchs assignés.</p>
+        </section>
+
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+            <span class="text-gray-400 mr-3 text-xl">🔍</span>
+            <input type="text" id="barre-recherche" onkeyup="filtrerArbitres()" placeholder="Rechercher un arbitre..." 
+                   class="w-full bg-transparent border-none focus:ring-0 text-gray-700 outline-none">
+        </section>
+
+        <div id="staff-container" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <p class="text-center text-gray-400 animate-pulse col-span-2 md:col-span-3">Chargement des arbitres...</p>
+        </div>
+    </main>
+
+    <div id="modal-arbitre" class="hidden fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-bleu-nuit text-white">
+                <h3 id="modal-nom-arbitre" class="font-bold uppercase">Nom de l'arbitre</h3>
+                <button onclick="fermerModal()" class="text-2xl hover:text-or transition-colors">&times;</button>
+            </div>
+            
+            <div id="liste-matchs-arbitre" class="p-4 overflow-y-auto space-y-3 bg-gray-50">
+                </div>
+        </div>
+    </div>
+
+    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+        <a href="index.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏠</span><span class="text-[10px] mt-1">ACCUEIL</span></a>
+        <a href="planning.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">📅</span><span class="text-[10px] mt-1">PLANNING</span></a>
+        <a href="equipes.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">👥</span><span class="text-[10px] mt-1">ÉQUIPES</span></a>
+        <a href="staff.html" class="flex flex-col items-center text-or"><span class="text-xl">🦺</span><span class="text-[10px] font-bold mt-1">STAFF</span></a>
+        <a href="classements.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">⭐</span><span class="text-[10px] mt-1">SCORES</span></a>
+    </nav>
+
+    <script>
+        // 🚨 N'OUBLIE PAS DE METTRE TON LIEN DE PLANNING ICI ! 🚨
+        const lienPlanning = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4HyMZ9cf-z5kWEIc_8G07U2uHUR5TFjArrRc1VzoXN_-p-jHAso-6S2g60FxUas9KoyLT7o_ZTWPq/pub?output=csv';
+
+        let tousLesMatchs = [];
+        let listeArbitres = []; // Pour la barre de recherche
+
+        async function initialiserPage() {
+            try {
+                const repPlanning = await fetch(lienPlanning);
+                const csvPlanning = await repPlanning.text();
+                const lignesP = csvPlanning.split('\n');
+                const sepP = (lignesP[0].split(';').length > lignesP[0].split(',').length) ? ';' : ',';
+
+                let arbitresUniques = new Set();
+                tousLesMatchs = [];
+
+                for (let i = 1; i < lignesP.length; i++) {
+                    const cols = lignesP[i].split(sepP);
+                    
+                    if (cols.length >= 8 && cols[0].trim() !== "") { 
+                        const arbitreNom = cols[7].trim(); 
+                        
+                        tousLesMatchs.push({
+                            date: cols[0].trim(), heure: cols[1].trim(), sport: cols[2].trim(),
+                            poule: cols[3].trim(), eq1: cols[4].trim(), eq2: cols[5].trim(),
+                            lieu: cols[6].trim(), arbitre: arbitreNom
+                        });
+
+                        if (arbitreNom !== "") {
+                            arbitresUniques.add(arbitreNom);
+                        }
+                    }
+                }
+
+                // On transforme la boîte en vraie liste triée pour l'utiliser avec la recherche
+                listeArbitres = Array.from(arbitresUniques).sort();
+                afficherArbitres(listeArbitres);
+
+            } catch (e) { 
+                document.getElementById('staff-container').innerHTML = '<p class="text-center text-red-500 font-bold col-span-2 md:col-span-3">Erreur de connexion au tableau Google.</p>';
+            }
+        }
+
+        // Fonction pour afficher les boutons (réutilisée pour la recherche)
+        function afficherArbitres(liste) {
+            const container = document.getElementById('staff-container');
+            container.innerHTML = '';
+
+            if (liste.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 col-span-2 md:col-span-3">Aucun arbitre trouvé.</p>';
+                return;
+            }
+
+            liste.forEach(nom => {
+                container.innerHTML += `
+                    <div onclick="ouvrirMatchsArbitre(\`${nom}\`)" class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm text-center cursor-pointer hover:border-or transition-all hover:shadow-md active:scale-95">
+                        <h3 class="font-bold text-bleu-nuit text-sm uppercase">${nom}</h3>
+                        <p class="text-[10px] text-or font-bold mt-1 tracking-wider">ARBITRE</p>
+                    </div>
+                `;
+            });
+        }
+
+        // Le "Moteur" de la barre de recherche
+        function filtrerArbitres() {
+            const txt = document.getElementById('barre-recherche').value.toLowerCase();
+            const filtres = listeArbitres.filter(nom => nom.toLowerCase().includes(txt));
+            afficherArbitres(filtres);
+        }
+
+        function ouvrirMatchsArbitre(nom) {
+            document.getElementById('modal-nom-arbitre').innerText = "Matchs de " + nom;
+            const listeContainer = document.getElementById('liste-matchs-arbitre');
+            listeContainer.innerHTML = '';
+
+            const matchsFiltres = tousLesMatchs.filter(m => m.arbitre.toLowerCase() === nom.toLowerCase());
+
+            if (matchsFiltres.length === 0) {
+                listeContainer.innerHTML = '<p class="text-center text-gray-400 py-10">Aucun match trouvé pour cet arbitre.</p>';
+            } else {
+                matchsFiltres.forEach(m => {
+                    // NOUVEAU DESIGN : L'emoji du sport est mis en grand à gauche !
+                    listeContainer.innerHTML += `
+                        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center">
+                            <div class="text-4xl mr-4 bg-orange-50 w-16 h-16 rounded-full flex items-center justify-center shadow-inner border border-orange-100 flex-shrink-0">
+                                ${m.sport}
+                            </div>
+                            
+                            <div class="flex-grow">
+                                <div class="flex justify-between items-start mb-1">
+                                    <span class="text-xs font-bold text-or bg-orange-50 px-2 py-0.5 rounded">${m.date} - ${m.heure}</span>
+                                    <span class="bg-bleu-nuit text-white text-[10px] px-2 py-0.5 rounded-full font-bold tracking-widest uppercase">Poule ${m.poule}</span>
+                                </div>
+                                <p class="text-sm font-bold text-gray-800 leading-tight mt-1">${m.eq1} <span class="text-gray-400 text-xs mx-1">VS</span> ${m.eq2}</p>
+                                <p class="text-[11px] text-gray-500 mt-1">📍 ${m.lieu}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            document.getElementById('modal-arbitre').classList.remove('hidden');
+        }
+
+        function fermerModal() { document.getElementById('modal-arbitre').classList.add('hidden'); }
+        
+        document.getElementById('modal-arbitre').addEventListener('click', function(e) {
+            if (e.target === this) fermerModal();
+        });
+
+        initialiserPage();
+    </script>
+</body>
+</html>

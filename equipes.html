@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intr'Aladin - Équipes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aladin&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { 'bleu-nuit': '#0B132B', 'or': '#F59E0B' },
+                    fontFamily: { 'aladin': ['"Aladin"', 'cursive'], 'sans': ['ui-sans-serif', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 pb-20 md:pb-0 font-sans">
+
+    <header class="bg-bleu-nuit text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md sticky top-0 z-40">
+        <div class="w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 1</div>
+        <div class="text-center">
+            <h1 class="text-4xl font-aladin tracking-widest text-or mt-2">INTR'ALADIN</h1>
+            <p class="text-xs text-gray-300">Du 19 mai au 14 juin</p>
+        </div>
+        <div class="hidden md:flex space-x-6 font-bold text-sm items-center">
+            <a href="index.html" class="hover:text-or transition-colors">Accueil</a>
+            <a href="planning.html" class="hover:text-or transition-colors">Planning</a>
+            <a href="equipes.html" class="text-or">Équipes</a>
+            <a href="staff.html" class="hover:text-or transition-colors">Staff</a>
+            <a href="classements.html" class="hover:text-or transition-colors">Scores</a>
+        </div>
+        <div class="md:hidden w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 2</div>
+    </header>
+
+    <main class="p-4 mt-4 space-y-6 max-w-4xl mx-auto">
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+            <span class="text-gray-400 mr-3 text-xl">🔍</span>
+            <input type="text" id="barre-recherche" onkeyup="filtrerEquipes()" placeholder="Rechercher une équipe..." 
+                   class="w-full bg-transparent border-none focus:ring-0 text-gray-700 outline-none">
+        </section>
+
+        <section>
+            <h2 class="font-bold text-xl text-bleu-nuit mb-4 text-center md:text-left">LES ÉQUIPES</h2>
+            <div id="equipes-container" class="grid grid-cols-3 md:grid-cols-6 gap-4">
+                <p class="text-center text-gray-400 animate-pulse col-span-3 md:col-span-6">Chargement des équipes...</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="modal-equipe" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+            <button onclick="fermerModal()" class="absolute top-3 right-3 bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center font-bold text-gray-500">X</button>
+            <div class="p-6 flex flex-col items-center">
+                <img id="modal-image" src="" alt="Logo" class="w-24 h-24 rounded-full object-cover border-4 border-or shadow-md mb-4">
+                <h3 id="modal-nom" class="text-2xl font-bold text-bleu-nuit text-center mb-2">Nom</h3>
+                <div class="w-full bg-orange-50 rounded-lg p-3 mb-4 text-center border border-orange-100">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Capitaine</p>
+                    <p id="modal-capitaine" class="font-bold text-or">-</p>
+                </div>
+                <div class="w-full">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-2">Joueurs</p>
+                    <ul id="modal-joueurs" class="text-sm text-gray-700 space-y-1 list-none"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+        <a href="index.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏠</span><span class="text-[10px] mt-1">ACCUEIL</span></a>
+        <a href="planning.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">📅</span><span class="text-[10px] mt-1">PLANNING</span></a>
+        <a href="equipes.html" class="flex flex-col items-center text-or"><span class="text-xl">👥</span><span class="text-[10px] font-bold mt-1">ÉQUIPES</span></a>
+        <a href="staff.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🦺</span><span class="text-[10px] mt-1">STAFF</span></a>
+        <a href="classements.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">⭐</span><span class="text-[10px] mt-1">SCORES</span></a>
+    </nav>
+
+    <script>
+        // 🚨 REMETS TON LIEN CSV ICI 🚨
+        const lienGoogleSheetEquipes = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS8Y_nW7rxI_qmpjOFAfA_ajqmzq9beBImqjUN85CfDs0Hxq8aSk7zEq_BrFkMPPX2IhvbaJZusCHxN/pub?output=csv';
+
+        let toutesLesEquipes = []; 
+
+        function convertirLienDrive(url) {
+            if (!url || url.trim() === "") return "";
+            const regex = /[-\w]{25,}/; 
+            const match = url.match(regex);
+            if (match) return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w800`;
+            return url; 
+        }
+
+        async function chargerEquipes() {
+            const container = document.getElementById('equipes-container');
+            try {
+                const reponse = await fetch(lienGoogleSheetEquipes);
+                const csv = await reponse.text();
+                
+                const premiereLigne = csv.split('\n')[0];
+                const separateurColonnes = (premiereLigne.split(';').length > premiereLigne.split(',').length) ? ';' : ',';
+
+                const lignes = csv.split('\n');
+                toutesLesEquipes = []; 
+
+                for (let i = 1; i < lignes.length; i++) {
+                    if (lignes[i].trim() === "") continue; 
+                    const colonnes = lignes[i].split(separateurColonnes);
+
+                    if (colonnes.length >= 3 && colonnes[0].trim() !== "") {
+                        
+                        // 🌟 LOGIQUE POUR RAMASSER TOUS LES JOUEURS 🌟
+                        let listeNomsJoueurs = [];
+                        // On commence à l'index 3 (4ème colonne) et on va jusqu'à la fin
+                        for (let j = 3; j < colonnes.length; j++) {
+                            let nom = colonnes[j].trim();
+                            if (nom !== "") {
+                                listeNomsJoueurs.push(nom);
+                            }
+                        }
+
+                        toutesLesEquipes.push({
+                            nom: colonnes[0].trim(),
+                            logo: convertirLienDrive(colonnes[1].trim()),
+                            capitaine: colonnes[2].trim(),
+                            joueurs: listeNomsJoueurs // C'est maintenant un tableau de noms
+                        });
+                    }
+                }
+                afficherEquipes(toutesLesEquipes);
+            } catch (e) {
+                container.innerHTML = 'Erreur de chargement';
+            }
+        }
+
+        function afficherEquipes(liste) {
+            const container = document.getElementById('equipes-container');
+            container.innerHTML = ''; 
+            liste.forEach((eq, index) => {
+                container.innerHTML += `
+                    <div onclick="ouvrirModal(${index})" class="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform group">
+                        <div class="w-20 h-20 bg-gray-200 rounded-full border-4 border-white shadow-md overflow-hidden group-hover:border-or transition-colors bg-white">
+                            <img src="${eq.logo}" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="font-bold text-xs text-center mt-2 text-bleu-nuit uppercase">${eq.nom}</h3>
+                    </div>`;
+            });
+        }
+
+        function ouvrirModal(index) {
+            const eq = toutesLesEquipes[index];
+            document.getElementById('modal-nom').innerText = eq.nom;
+            document.getElementById('modal-image').src = eq.logo;
+            document.getElementById('modal-capitaine').innerText = eq.capitaine;
+            
+            const ul = document.getElementById('modal-joueurs');
+            ul.innerHTML = '';
+            
+            // On affiche chaque joueur du tableau
+            eq.joueurs.forEach(joueur => {
+                ul.innerHTML += `<li>• ${joueur}</li>`;
+            });
+
+            document.getElementById('modal-equipe').classList.remove('hidden');
+        }
+
+        function fermerModal() { document.getElementById('modal-equipe').classList.add('hidden'); }
+        
+        document.getElementById('modal-equipe').addEventListener('click', function(event) {
+            if (event.target === this) fermerModal();
+        });
+
+        function filtrerEquipes() {
+            const txt = document.getElementById('barre-recherche').value.toLowerCase();
+            const filtrees = toutesLesEquipes.filter(e => e.nom.toLowerCase().includes(txt));
+            afficherEquipes(filtrees);
+        }
+
+        chargerEquipes();
+    </script>
+</body>
+</html>

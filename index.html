@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intr'***** - Accueil</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aladin&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bleu-nuit': '#0B132B',
+                        'or': '#F59E0B'
+                    },
+                    fontFamily: {
+                        'aladin': ['"Aladin"', 'cursive'], 
+                        'sans': ['ui-sans-serif', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 pb-20 md:pb-0 font-sans">
+
+    <header class="bg-gradient-to-r from-bleu-nuit to-indigo-900 text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md">
+        <div class="w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 1</div>
+        <div class="text-center">
+            <h1 class="text-4xl font-aladin tracking-widest text-or mt-2">INTR'ALADIN</h1>
+            <p class="text-xs text-gray-300">Du 18 mai au 11 juin</p>
+        </div>
+        <div class="hidden md:flex space-x-6 font-bold text-sm items-center">
+            <a href="index.html" class="text-or">Accueil</a>
+            <a href="planning.html" class="hover:text-or transition-colors">Planning</a>
+            <a href="equipes.html" class="hover:text-or transition-colors">Équipes</a>
+            <a href="staff.html" class="hover:text-or transition-colors">Staff</a>
+            <a href="classements.html" class="hover:text-or transition-colors">Classements</a>
+        </div>
+        <div class="md:hidden w-12 h-12 bg-gray-200/20 rounded-full flex items-center justify-center text-xs border border-white/30">Logo 2</div>
+    </header>
+
+    <main class="p-4 mt-4 space-y-8 max-w-6xl mx-auto">
+        
+        <div class="space-y-6">
+            
+            <section class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:justify-center md:items-center md:space-x-12">
+                <p class="text-sm flex items-center">
+                    <span class="text-lg mr-2">🗓️</span> 
+                    <span><strong>Problème de planning ?</strong> 💬 Contacter Antoine Mads Lederer</span>
+                </p>
+                
+                <div class="hidden md:block w-px h-8 bg-gray-200"></div> 
+                
+                <p class="text-sm mt-3 md:mt-0 flex items-center">
+                    <span class="text-lg mr-2">🏀</span> 
+                    <span><strong>Problème de matériel ?</strong> 💬 Contacter Nina Mads Schlienger</span>
+                </p>
+            </section>
+
+            <section>
+    <h2 class="font-bold text-lg mb-2 md:text-center">Annonces</h2>
+    <div class="bg-orange-50 border-l-4 border-or p-6 rounded-r-lg shadow-sm">
+        
+        <p class="font-bold text-base text-bleu-nuit text-center mb-4 uppercase tracking-wider">
+            Pensez à faire vos équipes de 8 à 10 personnes !!!
+        </p>
+        
+    
+        
+        <p class="text-xs text-gray-500 text-center mt-3 font-bold">
+            
+        </p>
+    </div>
+</section>
+        </div>
+
+        <section>
+            <h2 class="font-bold text-lg mb-4">Les responsables de poule</h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                
+                <a href="classements.html?poule=A" class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 cursor-pointer hover:shadow-lg hover:border-or hover:-translate-y-1 transition-all duration-200 block">
+                    <img src="images/Obled.png" alt="Romain" class="w-full h-32 object-cover bg-gray-200">
+                    <div class="p-3 text-center">
+                        <h3 class="font-bold text-sm text-bleu-nuit">POULE A</h3>
+                        <p class="text-xs text-gray-500">Romain Mads Obled</p>
+                    </div>
+                </a>
+
+                 <a href="classements.html?poule=B" class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 cursor-pointer hover:shadow-lg hover:border-or hover:-translate-y-1 transition-all duration-200 block">
+                     <img src="images/Fedescrez.png" alt="Antoine" class="w-full h-32 object-cover bg-gray-200">
+                    <div class="p-3 text-center">
+                        <h3 class="font-bold text-sm text-bleu-nuit">POULE B</h3>
+                        <p class="text-xs text-gray-500">Antoine Mads Lederer</p>
+                    </div>
+                </a>
+
+                <a href="classements.html?poule=C" class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 cursor-pointer hover:shadow-lg hover:border-or hover:-translate-y-1 transition-all duration-200 block">
+                     <img src="images/Oscar.png" alt="Oscar" class="w-full h-32 object-cover bg-gray-200">
+                    <div class="p-3 text-center">
+                        <h3 class="font-bold text-sm text-bleu-nuit">POULE C</h3>
+                        <p class="text-xs text-gray-500">Oscar Mads Maizeret</p>
+                    </div>
+                </a>
+
+                <a href="classements.html?poule=D" class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 cursor-pointer hover:shadow-lg hover:border-or hover:-translate-y-1 transition-all duration-200 block">
+                     <img src="images/Alex.png" alt="Alexandre" class="w-full h-32 object-cover bg-gray-200">
+                    <div class="p-3 text-center">
+                        <h3 class="font-bold text-sm text-bleu-nuit">POULE D</h3>
+                        <p class="text-xs text-gray-500">Alexandre Mads Le Naour</p>
+                    </div>
+                </a>
+
+            </div>
+        </section>
+    </main>
+
+    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+        <a href="index.html" class="flex flex-col items-center text-or">
+            <span class="text-xl">🏠</span>
+            <span class="text-[10px] font-bold mt-1">ACCUEIL</span>
+        </a>
+        <a href="planning.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit">
+            <span class="text-xl">📅</span>
+            <span class="text-[10px] mt-1">PLANNING</span>
+        </a>
+        <a href="equipes.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit">
+            <span class="text-xl">👥</span>
+            <span class="text-[10px] mt-1">ÉQUIPES</span>
+        </a>
+        <a href="staff.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit">
+            <span class="text-xl">🦺</span>
+            <span class="text-[10px] mt-1">STAFF</span>
+        </a>
+        <a href="classements.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit">
+            <span class="text-xl">⭐</span>
+            <span class="text-[10px] mt-1">CLASSEMENTS</span>
+        </a>
+    </nav>
+
+</body>
+</html>

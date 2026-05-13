@@ -45,20 +45,30 @@
 
     <main class="p-4 mt-4 space-y-6 max-w-4xl mx-auto">
         
-        <section class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <h2 class="font-bold text-xl text-bleu-nuit">PLANNING DES MATCHS</h2>
-            <div class="grid grid-cols-3 gap-2 w-full md:w-auto">
-                <select id="filtre-date" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs sm:text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
-                    <option value="Toutes" selected>Dates</option>
-                </select>
+        <section class="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <!-- Haut : Titre + Menus déroulants -->
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <h2 class="font-bold text-xl text-bleu-nuit">PLANNING DES MATCHS</h2>
+                <div class="grid grid-cols-3 gap-2 w-full md:w-auto">
+                    <select id="filtre-date" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs sm:text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
+                        <option value="Toutes" selected>Dates</option>
+                    </select>
 
-                <select id="filtre-poule" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs sm:text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
-                    <option value="Toutes" selected>Poules</option>
-                </select>
+                    <select id="filtre-poule" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs sm:text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
+                        <option value="Toutes" selected>Poules</option>
+                    </select>
 
-                <select id="filtre-sport" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs sm:text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
-                    <option value="Toutes" selected>Sports</option>
-                </select>
+                    <select id="filtre-sport" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs sm:text-sm rounded-lg focus:ring-or focus:border-or block w-full p-2.5">
+                        <option value="Toutes" selected>Sports</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Bas : Barre de recherche -->
+            <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                <span class="text-gray-400 mr-2 text-lg">🔍</span>
+                <input type="text" id="recherche-equipe" onkeyup="filtrerMatchs()" placeholder="Rechercher une équipe..." 
+                       class="w-full bg-transparent border-none focus:ring-0 text-gray-700 outline-none text-sm">
             </div>
         </section>
 
@@ -91,7 +101,7 @@
                 tousLesMatchs = []; 
                 let datesDisponibles = new Set(); 
                 let poulesDisponibles = new Set(); 
-                let sportsDisponibles = new Set(); // NOUVEAU: On prépare la liste des sports
+                let sportsDisponibles = new Set();
 
                 for (let i = 1; i < lignes.length; i++) {
                     const colonnes = lignes[i].split(',');
@@ -102,7 +112,7 @@
                             heure: colonnes[1].trim(),
                             sport: colonnes[2].trim(),
                             poule: colonnes[3].trim(),
-                            eq1: colonnes[4].trim(),
+                            eq1: colonnes[4].trim(), // C'est ici qu'on a toutes nos équipes
                             eq2: colonnes[5].trim(),
                             lieu: colonnes[6].trim()
                         };
@@ -110,11 +120,10 @@
                         
                         datesDisponibles.add(match.date);
                         poulesDisponibles.add(match.poule);
-                        sportsDisponibles.add(match.sport); // NOUVEAU: On mémorise le sport
+                        sportsDisponibles.add(match.sport);
                     }
                 }
 
-                // On envoie nos 3 listes à la fonction qui remplit les menus
                 remplirFiltres(datesDisponibles, poulesDisponibles, sportsDisponibles);
                 afficherMatchs(tousLesMatchs);
 
@@ -127,7 +136,7 @@
         function remplirFiltres(dates, poules, sports) {
             const selectDate = document.getElementById('filtre-date');
             const selectPoule = document.getElementById('filtre-poule');
-            const selectSport = document.getElementById('filtre-sport'); // NOUVEAU
+            const selectSport = document.getElementById('filtre-sport');
 
             dates.forEach(date => {
                 selectDate.innerHTML += `<option value="${date}">${date}</option>`;
@@ -137,7 +146,6 @@
                 selectPoule.innerHTML += `<option value="${poule}">Poule ${poule}</option>`;
             });
 
-            // NOUVEAU: On remplit le menu des sports
             Array.from(sports).sort().forEach(sport => {
                 selectSport.innerHTML += `<option value="${sport}">${sport}</option>`;
             });
@@ -155,7 +163,7 @@
             listeDeMatchs.forEach(match => {
                 const carteHTML = `
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow">
-                        <div class="text-4xl bg-orange-50 p-3 rounded-full mr-4 border border-orange-100 flex-shrink-0">${match.sport}</div>
+                        <div class="text-4xl bg-orange-50 w-16 h-16 flex items-center justify-center rounded-full mr-4 border border-orange-100 flex-shrink-0">${match.sport}</div>
                         <div class="flex-grow">
                             <div class="flex justify-between items-start">
                                 <span class="font-bold text-bleu-nuit">POULE ${match.poule}</span>
@@ -173,14 +181,18 @@
         function filtrerMatchs() {
             const dateChoisie = document.getElementById('filtre-date').value;
             const pouleChoisie = document.getElementById('filtre-poule').value;
-            const sportChoisi = document.getElementById('filtre-sport').value; // NOUVEAU
+            const sportChoisi = document.getElementById('filtre-sport').value;
+            const texteRecherche = document.getElementById('recherche-equipe').value.toLowerCase(); // NOUVEAU
 
             const matchsFiltres = tousLesMatchs.filter(match => {
                 const dateOk = (dateChoisie === 'Toutes') || (match.date === dateChoisie);
                 const pouleOk = (pouleChoisie === 'Toutes') || (match.poule === pouleChoisie);
-                const sportOk = (sportChoisi === 'Toutes') || (match.sport === sportChoisi); // NOUVEAU
+                const sportOk = (sportChoisi === 'Toutes') || (match.sport === sportChoisi);
                 
-                return dateOk && pouleOk && sportOk;
+                // NOUVEAU : On vérifie si le texte tapé se trouve dans la liste des équipes
+                const rechercheOk = match.eq1.toLowerCase().includes(texteRecherche); 
+                
+                return dateOk && pouleOk && sportOk && rechercheOk;
             });
 
             afficherMatchs(matchsFiltres);

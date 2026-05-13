@@ -45,7 +45,7 @@
     <main class="p-4 mt-4 space-y-6 max-w-4xl mx-auto">
         <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
             <h2 class="font-bold text-2xl text-bleu-nuit uppercase tracking-wider">Classements & Résultats</h2>
-            <p class="text-gray-500 text-sm mt-1">Les rencontres sont générées automatiquement. Les scores se mettent à jour à la saisie.</p>
+            <p class="text-gray-500 text-sm mt-1">Les rencontres sont générées automatiquement. Clique sur une équipe pour voir ses joueurs !</p>
         </section>
 
         <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
@@ -59,6 +59,26 @@
             <p class="text-center text-gray-400 animate-pulse">Génération des matchs et calcul des classements...</p>
         </div>
     </main>
+
+    <!-- LA NOUVELLE FENÊTRE POP-UP POUR LES ÉQUIPES -->
+    <div id="modal-equipe" class="hidden fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-bleu-nuit text-white">
+                <div class="flex items-center space-x-3">
+                    <img id="modal-equipe-logo" src="" class="w-10 h-10 rounded-full object-cover border border-white/30 bg-white" onerror="this.style.display='none'">
+                    <h3 id="modal-equipe-nom" class="font-bold uppercase tracking-wider">Nom de l'équipe</h3>
+                </div>
+                <button onclick="fermerModalEquipe()" class="text-2xl hover:text-or transition-colors">&times;</button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto space-y-3 bg-gray-50">
+                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Membres de l'équipe</h4>
+                <ul id="liste-joueurs-equipe" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <!-- Les joueurs s'afficheront ici -->
+                </ul>
+            </div>
+        </div>
+    </div>
 
     <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
         <a href="index.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏠</span><span class="text-[10px] mt-1">ACCUEIL</span></a>
@@ -78,6 +98,9 @@
 
         const LISTE_SPORTS = ["Football", "Handball", "Ultimate", "Basketball", "Pétanque", "Volleyball"];
         let toutesLesDonneesPoules = {};
+        
+        // Nouvelle variable pour stocker les joueurs de chaque équipe
+        let joueursParEquipe = {}; 
 
         function convertirLienDrive(url) {
             if (!url || url.trim() === "") return "https://via.placeholder.com/150?text=Logo";
@@ -90,10 +113,10 @@
         async function genererClassements() {
             const container = document.getElementById('classements-container');
             try {
-                let dictionnaireEquipes = {}; // Structure: { pouleA: [{nom, logo}, ...], pouleB: ... }
+                let dictionnaireEquipes = {}; 
                 let dictionnaireLogos = {};
 
-                // 1. CHARGEMENT DES ÉQUIPES (Nécessaire pour générer les matchs)
+                // 1. CHARGEMENT DES ÉQUIPES ET DES JOUEURS
                 try {
                     const repEquipes = await fetch(lienEquipes);
                     const csvEquipes = await repEquipes.text();
@@ -102,7 +125,6 @@
 
                     for (let i = 1; i < lignesEquipes.length; i++) {
                         const cols = lignesEquipes[i].split(sepEq);
-                        // Format attendu: Colonne 0 = Nom, Colonne 1 = Logo, Colonne 2 = Poule
                         if (cols.length >= 3 && cols[0].trim() !== "") {
                             const nomEq = cols[0].trim();
                             const logoEq = convertirLienDrive(cols[1].trim());
@@ -112,6 +134,14 @@
 
                             if (!dictionnaireEquipes[pouleEq]) dictionnaireEquipes[pouleEq] = [];
                             dictionnaireEquipes[pouleEq].push({ nom: nomEq, logo: logoEq });
+
+                            // Sauvegarde des joueurs (tout ce qui est après la colonne C / index 2)
+                            const listeJoueurs = cols.slice(3).map(j => j.trim()).filter(j => j !== "");
+                            joueursParEquipe[nomEq.toLowerCase()] = {
+                                nom: nomEq,
+                                logo: logoEq,
+                                joueurs: listeJoueurs
+                            };
                         }
                     }
                 } catch (errLogos) { console.log("Erreur chargement équipes"); }
@@ -120,14 +150,13 @@
                     return dictionnaireLogos[nomEquipe.trim().toLowerCase()] || 'https://via.placeholder.com/150/f3f4f6/9ca3af?text=' + nomEquipe.charAt(0).toUpperCase();
                 }
 
-                // 2. GÉNÉRATION DES MATCHS (Round-Robin) ET INITIALISATION DES POULES
+                // 2. GÉNÉRATION DES MATCHS
                 toutesLesDonneesPoules = {};
 
                 Object.keys(dictionnaireEquipes).forEach(nomPoule => {
                     const equipesDeLaPoule = dictionnaireEquipes[nomPoule];
                     toutesLesDonneesPoules[nomPoule] = { classement: {}, matchs: [] };
 
-                    // Initialiser le classement à zéro pour chaque équipe
                     equipesDeLaPoule.forEach(eq => {
                         toutesLesDonneesPoules[nomPoule].classement[eq.nom] = { 
                             nom: eq.nom, pts: 0, joues: 0, victoires: 0, nuls: 0, defaites: 0, butsPour: 0, butsContre: 0, diff: 0,
@@ -135,7 +164,6 @@
                         };
                     });
 
-                    // Créer toutes les combinaisons de matchs pour chaque sport
                     LISTE_SPORTS.forEach(sport => {
                         for (let i = 0; i < equipesDeLaPoule.length; i++) {
                             for (let j = i + 1; j < equipesDeLaPoule.length; j++) {
@@ -145,8 +173,8 @@
                                     eq2: equipesDeLaPoule[j].nom,
                                     logo1: equipesDeLaPoule[i].logo,
                                     logo2: equipesDeLaPoule[j].logo,
-                                    score1Str: "", // Vide par défaut (En attente)
-                                    score2Str: "", // Vide par défaut (En attente)
+                                    score1Str: "", 
+                                    score2Str: "", 
                                     matchJoue: false
                                 });
                             }
@@ -154,7 +182,7 @@
                     });
                 });
 
-                // 3. CHARGEMENT DES SCORES SAISIS
+                // 3. CHARGEMENT DES SCORES
                 const reponseScores = await fetch(lienScores);
                 const csvScores = await reponseScores.text();
                 const lignesScores = csvScores.split('\n');
@@ -164,8 +192,6 @@
                     if (lignesScores[i].trim() === "") continue;
                     const cols = lignesScores[i].split(separateurScores);
 
-                    // NOUVEAU FORMAT DU SHEET SCORE: Sport (0), Poule (1), Eq1 (2), Score1 (3), Score2 (4), Eq2 (5)
-                    // (On a enlevé Date et Heure car elles sont dans le planning)
                     if (cols.length >= 6 && cols[0].trim() !== "") {
                         const sportSaisi = cols[0].trim();
                         const nomPouleSaisie = cols[1].trim().toUpperCase();
@@ -174,10 +200,8 @@
                         const score2StrSaisi = cols[4].trim();
                         const eq2Saisie = cols[5].trim();
 
-                        // Si la poule existe dans notre structure générée
                         if (toutesLesDonneesPoules[nomPouleSaisie]) {
                             
-                            // Chercher le match généré correspondant
                             let matchTrouve = toutesLesDonneesPoules[nomPouleSaisie].matchs.find(m => 
                                 m.sport.toLowerCase() === sportSaisi.toLowerCase() &&
                                 ((m.eq1.toLowerCase() === eq1Saisie.toLowerCase() && m.eq2.toLowerCase() === eq2Saisie.toLowerCase()) || 
@@ -185,7 +209,6 @@
                             );
 
                             if (matchTrouve) {
-                                // VÉRIFICATION DES FORFAITS
                                 const s1StrU = score1StrSaisi.toUpperCase();
                                 const s2StrU = score2StrSaisi.toUpperCase();
                                 
@@ -203,10 +226,8 @@
                                 const matchEstJoue = (!isNaN(score1Num) && !isNaN(score2Num)) || isF1 || isF48_1 || isV1 || isF2 || isF48_2 || isV2;
 
                                 if (matchEstJoue) {
-                                    // Mettre à jour le match
                                     matchTrouve.matchJoue = true;
                                     
-                                    // Remettre les équipes dans le bon ordre (si elles ont été saisies à l'envers dans Sheets)
                                     let score1PourCalcul = score1StrSaisi;
                                     let score2PourCalcul = score2StrSaisi;
                                     
@@ -220,7 +241,6 @@
                                         matchTrouve.score2Str = score2StrSaisi;
                                     }
 
-                                    // CALCULER LES POINTS POUR LE CLASSEMENT
                                     let stat1 = toutesLesDonneesPoules[nomPouleSaisie].classement[matchTrouve.eq1];
                                     let stat2 = toutesLesDonneesPoules[nomPouleSaisie].classement[matchTrouve.eq2];
 
@@ -233,7 +253,6 @@
                                         const calc_s2Num = parseInt(score2PourCalcul);
 
                                         if (!isNaN(calc_s1Num) && !isNaN(calc_s2Num)) {
-                                            // MATCH NORMAL
                                             stat1.butsPour += calc_s1Num; stat1.butsContre += calc_s2Num;
                                             stat2.butsPour += calc_s2Num; stat2.butsContre += calc_s1Num;
 
@@ -248,7 +267,6 @@
                                                 stat2.nuls += 1; stat2.pts += PTS_NUL;
                                             }
                                         } else {
-                                            // GESTION DES FORFAITS (Adaptée au nouvel ordre)
                                             const calc_isF1 = calc_s1StrU === 'F';
                                             const calc_isF48_1 = calc_s1StrU === 'F48' || calc_s1StrU === 'F-48';
                                             const calc_isV1 = calc_s1StrU === 'V';
@@ -323,8 +341,9 @@
                 let htmlTableau = '';
                 classementTrie.forEach((eq, index) => {
                     const isFirst = index === 0;
+                    // NOUVEAU: Le TR est cliquable !
                     htmlTableau += `
-                        <tr class="border-b border-gray-100 last:border-0 ${isFirst ? 'bg-orange-50/50' : ''}">
+                        <tr class="border-b border-gray-100 last:border-0 ${isFirst ? 'bg-orange-50/50' : ''} cursor-pointer hover:bg-gray-100 transition-colors" onclick="ouvrirModalEquipe(\`${eq.nom}\`)">
                             <td class="py-3 px-3 text-center text-gray-400 font-bold">${index + 1}</td>
                             <td class="py-3 px-2 text-left">
                                 <div class="flex items-center space-x-3">
@@ -342,7 +361,6 @@
                     `;
                 });
 
-                // ON REGROUPE LES MATCHS PAR SPORT
                 let matchsParSport = {};
                 poule.matchs.forEach(match => {
                     let sportCle = match.sport || "Autres";
@@ -352,9 +370,8 @@
 
                 let htmlAccordions = '';
                 
-                // On s'assure d'afficher les sports dans l'ordre de la liste LISTE_SPORTS
                 LISTE_SPORTS.forEach(sport => {
-                    if(!matchsParSport[sport]) return; // Si pas de match pour ce sport, on passe
+                    if(!matchsParSport[sport]) return; 
                     
                     let htmlMatchs = '';
                     matchsParSport[sport].forEach(match => {
@@ -362,20 +379,20 @@
                         if (match.matchJoue) {
                             affichageCentral = `<div class="bg-bleu-nuit text-white font-bold px-4 py-2 rounded-lg flex items-center justify-center min-w-[80px] text-lg shadow-sm tracking-widest">${match.score1Str} - ${match.score2Str}</div>`;
                         } else {
-                            // Match généré mais pas encore joué (pas de score trouvé dans Sheets)
                             affichageCentral = `<div class="bg-gray-100 text-gray-400 text-[10px] font-bold px-3 py-2 rounded-lg flex flex-col items-center justify-center min-w-[80px] uppercase border border-dashed border-gray-300 leading-tight">À JOUER</div>`;
                         }
 
+                        // NOUVEAU: Les blocs équipes sont cliquables !
                         htmlMatchs += `
                             <div class="flex items-center justify-between py-4 border-b border-gray-100/50 last:border-0 hover:bg-gray-50 px-2 transition-colors">
-                                <div class="w-1/3 flex items-center justify-end space-x-3 pr-4">
+                                <div class="w-1/3 flex items-center justify-end space-x-3 pr-4 cursor-pointer hover:opacity-70 transition-opacity" onclick="ouvrirModalEquipe(\`${match.eq1}\`)">
                                     <span class="font-bold text-base md:text-lg text-gray-800 truncate text-right">${match.eq1}</span>
                                     <img src="${match.logo1}" class="w-12 h-12 rounded-full object-cover border border-gray-200 bg-white shadow-sm flex-shrink-0" onerror="this.style.display='none'">
                                 </div>
                                 
                                 <div class="w-auto flex-shrink-0 z-10">${affichageCentral}</div>
                                 
-                                <div class="w-1/3 flex items-center justify-start space-x-3 pl-4">
+                                <div class="w-1/3 flex items-center justify-start space-x-3 pl-4 cursor-pointer hover:opacity-70 transition-opacity" onclick="ouvrirModalEquipe(\`${match.eq2}\`)">
                                     <img src="${match.logo2}" class="w-12 h-12 rounded-full object-cover border border-gray-200 bg-white shadow-sm flex-shrink-0" onerror="this.style.display='none'">
                                     <span class="font-bold text-base md:text-lg text-gray-800 truncate text-left">${match.eq2}</span>
                                 </div>
@@ -383,7 +400,6 @@
                         `;
                     });
 
-                    // Création du bloc accordéon
                     htmlAccordions += `
                         <details class="mb-3 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden group">
                             <summary class="p-4 font-bold text-bleu-nuit cursor-pointer outline-none uppercase tracking-widest text-sm flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition-colors">
@@ -423,7 +439,6 @@
                             </table>
                         </div>
 
-                        <!-- Bloc des accordéons par sport -->
                         <div class="px-2 pb-2">
                             ${htmlAccordions}
                         </div>
@@ -431,6 +446,51 @@
                 `;
             });
         }
+
+        // --- FONCTIONS POUR GÉRER LA FENÊTRE POP-UP DES ÉQUIPES ---
+        function ouvrirModalEquipe(nom) {
+            const eqData = joueursParEquipe[nom.toLowerCase()];
+            if (!eqData) return;
+
+            // Remplir l'en-tête
+            document.getElementById('modal-equipe-nom').innerText = eqData.nom;
+            const logoImg = document.getElementById('modal-equipe-logo');
+            logoImg.src = eqData.logo;
+            logoImg.style.display = 'block';
+
+            // Remplir la liste des joueurs
+            const listeContainer = document.getElementById('liste-joueurs-equipe');
+            listeContainer.innerHTML = '';
+
+            if (eqData.joueurs.length === 0) {
+                listeContainer.innerHTML = '<p class="text-gray-500 text-sm italic col-span-2">Aucun joueur renseigné.</p>';
+            } else {
+                eqData.joueurs.forEach(joueur => {
+                    // Au cas où plusieurs joueurs sont séparés par une virgule dans une même case
+                    const sousJoueurs = joueur.split(',').map(j => j.trim()).filter(j => j !== "");
+                    sousJoueurs.forEach(subJ => {
+                        listeContainer.innerHTML += `
+                            <li class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex items-center space-x-3">
+                                <span class="text-xl bg-orange-50 w-8 h-8 rounded-full flex items-center justify-center text-or border border-orange-100">👤</span>
+                                <span class="font-bold text-gray-700 text-sm">${subJ}</span>
+                            </li>
+                        `;
+                    });
+                });
+            }
+            
+            // Afficher la modale
+            document.getElementById('modal-equipe').classList.remove('hidden');
+        }
+
+        function fermerModalEquipe() {
+            document.getElementById('modal-equipe').classList.add('hidden');
+        }
+
+        // Fermer la modale quand on clique dans le vide à côté
+        document.getElementById('modal-equipe').addEventListener('click', function(e) {
+            if (e.target === this) fermerModalEquipe();
+        });
 
         genererClassements();
     </script>

@@ -19,19 +19,15 @@
         }
     </script>
     <style>
-        /* Cache la petite flèche moche par défaut des balises "details" */
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
-        /* Fait tourner notre belle flèche quand on clique */
         details[open] .arrow-icon { transform: rotate(180deg); }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 pb-32 md:pb-0 font-sans">
 
     <header class="bg-gradient-to-r from-bleu-nuit to-indigo-900 text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md">
-        
         <img src="logo intra.png" alt="Logo Intras" class="w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20" onerror="this.style.display='none'">
-        
         <div class="text-center">
             <h1 class="text-4xl font-aladin tracking-widest text-or mt-2">INTR'ALADIN</h1>
             <p class="text-xs text-gray-300">Du 18 mai au 11 juin</p>
@@ -43,15 +39,13 @@
             <a href="staff.html" class="hover:text-or transition-colors">Staff</a>
             <a href="classements.html" class="text-or">Classements</a>
         </div>
-        
         <img src="logo_mads.png" alt="Logo Mads" class="md:hidden w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20" onerror="this.style.display='none'">
-        
     </header>
 
     <main class="p-4 mt-4 space-y-6 max-w-4xl mx-auto">
         <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
             <h2 class="font-bold text-2xl text-bleu-nuit uppercase tracking-wider">Classements & Résultats</h2>
-            <p class="text-gray-500 text-sm mt-1">Les tableaux sont mis à jour automatiquement avec les scores.</p>
+            <p class="text-gray-500 text-sm mt-1">Les rencontres sont générées automatiquement. Les scores se mettent à jour à la saisie.</p>
         </section>
 
         <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
@@ -62,7 +56,7 @@
         </section>
 
         <div id="classements-container" class="space-y-10">
-            <p class="text-center text-gray-400 animate-pulse">Calcul des classements en cours...</p>
+            <p class="text-center text-gray-400 animate-pulse">Génération des matchs et calcul des classements...</p>
         </div>
     </main>
 
@@ -82,6 +76,7 @@
         const PTS_NUL = 2;
         const PTS_DEFAITE = 1;
 
+        const LISTE_SPORTS = ["Football", "Handball", "Ultimate", "Basketball", "Pétanque", "Volleyball"];
         let toutesLesDonneesPoules = {};
 
         function convertirLienDrive(url) {
@@ -95,7 +90,10 @@
         async function genererClassements() {
             const container = document.getElementById('classements-container');
             try {
+                let dictionnaireEquipes = {}; // Structure: { pouleA: [{nom, logo}, ...], pouleB: ... }
                 let dictionnaireLogos = {};
+
+                // 1. CHARGEMENT DES ÉQUIPES (Nécessaire pour générer les matchs)
                 try {
                     const repEquipes = await fetch(lienEquipes);
                     const csvEquipes = await repEquipes.text();
@@ -104,125 +102,185 @@
 
                     for (let i = 1; i < lignesEquipes.length; i++) {
                         const cols = lignesEquipes[i].split(sepEq);
-                        if (cols.length >= 2 && cols[0].trim() !== "") {
-                            dictionnaireLogos[cols[0].trim().toLowerCase()] = convertirLienDrive(cols[1].trim());
+                        // Format attendu: Colonne 0 = Nom, Colonne 1 = Logo, Colonne 2 = Poule
+                        if (cols.length >= 3 && cols[0].trim() !== "") {
+                            const nomEq = cols[0].trim();
+                            const logoEq = convertirLienDrive(cols[1].trim());
+                            const pouleEq = cols[2].trim().toUpperCase();
+
+                            dictionnaireLogos[nomEq.toLowerCase()] = logoEq;
+
+                            if (!dictionnaireEquipes[pouleEq]) dictionnaireEquipes[pouleEq] = [];
+                            dictionnaireEquipes[pouleEq].push({ nom: nomEq, logo: logoEq });
                         }
                     }
-                } catch (errLogos) { console.log("Erreur logos"); }
+                } catch (errLogos) { console.log("Erreur chargement équipes"); }
 
                 function getLogo(nomEquipe) {
                     return dictionnaireLogos[nomEquipe.trim().toLowerCase()] || 'https://via.placeholder.com/150/f3f4f6/9ca3af?text=' + nomEquipe.charAt(0).toUpperCase();
                 }
 
-                const reponse = await fetch(lienScores);
-                const csv = await reponse.text();
-                const lignes = csv.split('\n');
-                const separateur = (lignes[0].split(';').length > lignes[0].split(',').length) ? ';' : ',';
-
+                // 2. GÉNÉRATION DES MATCHS (Round-Robin) ET INITIALISATION DES POULES
                 toutesLesDonneesPoules = {};
 
-                for (let i = 1; i < lignes.length; i++) {
-                    if (lignes[i].trim() === "") continue;
-                    const cols = lignes[i].split(separateur);
+                Object.keys(dictionnaireEquipes).forEach(nomPoule => {
+                    const equipesDeLaPoule = dictionnaireEquipes[nomPoule];
+                    toutesLesDonneesPoules[nomPoule] = { classement: {}, matchs: [] };
 
-                    if (cols.length >= 8 && cols[0].trim() !== "") {
-                        const date = cols[0].trim();
-                        const heure = cols[1].trim();
-                        const sport = cols[2].trim(); 
-                        const nomPoule = cols[3].trim(); 
-                        const eq1 = cols[4].trim();
-                        const score1Str = cols[5].trim();
-                        const score2Str = cols[6].trim();
-                        const eq2 = cols[7].trim();
+                    // Initialiser le classement à zéro pour chaque équipe
+                    equipesDeLaPoule.forEach(eq => {
+                        toutesLesDonneesPoules[nomPoule].classement[eq.nom] = { 
+                            nom: eq.nom, pts: 0, joues: 0, victoires: 0, nuls: 0, defaites: 0, butsPour: 0, butsContre: 0, diff: 0,
+                            logo: eq.logo
+                        };
+                    });
 
-                        if (!toutesLesDonneesPoules[nomPoule]) {
-                            toutesLesDonneesPoules[nomPoule] = { classement: {}, matchs: [] };
+                    // Créer toutes les combinaisons de matchs pour chaque sport
+                    LISTE_SPORTS.forEach(sport => {
+                        for (let i = 0; i < equipesDeLaPoule.length; i++) {
+                            for (let j = i + 1; j < equipesDeLaPoule.length; j++) {
+                                toutesLesDonneesPoules[nomPoule].matchs.push({
+                                    sport: sport,
+                                    eq1: equipesDeLaPoule[i].nom,
+                                    eq2: equipesDeLaPoule[j].nom,
+                                    logo1: equipesDeLaPoule[i].logo,
+                                    logo2: equipesDeLaPoule[j].logo,
+                                    score1Str: "", // Vide par défaut (En attente)
+                                    score2Str: "", // Vide par défaut (En attente)
+                                    matchJoue: false
+                                });
+                            }
                         }
+                    });
+                });
 
-                        [eq1, eq2].forEach(eq => {
-                            if (eq !== "" && !toutesLesDonneesPoules[nomPoule].classement[eq]) {
-                                toutesLesDonneesPoules[nomPoule].classement[eq] = { 
-                                    nom: eq, pts: 0, joues: 0, victoires: 0, nuls: 0, defaites: 0, butsPour: 0, butsContre: 0, diff: 0,
-                                    logo: getLogo(eq)
-                                };
+                // 3. CHARGEMENT DES SCORES SAISIS
+                const reponseScores = await fetch(lienScores);
+                const csvScores = await reponseScores.text();
+                const lignesScores = csvScores.split('\n');
+                const separateurScores = (lignesScores[0].split(';').length > lignesScores[0].split(',').length) ? ';' : ',';
+
+                for (let i = 1; i < lignesScores.length; i++) {
+                    if (lignesScores[i].trim() === "") continue;
+                    const cols = lignesScores[i].split(separateurScores);
+
+                    // NOUVEAU FORMAT DU SHEET SCORE: Sport (0), Poule (1), Eq1 (2), Score1 (3), Score2 (4), Eq2 (5)
+                    // (On a enlevé Date et Heure car elles sont dans le planning)
+                    if (cols.length >= 6 && cols[0].trim() !== "") {
+                        const sportSaisi = cols[0].trim();
+                        const nomPouleSaisie = cols[1].trim().toUpperCase();
+                        const eq1Saisie = cols[2].trim();
+                        const score1StrSaisi = cols[3].trim();
+                        const score2StrSaisi = cols[4].trim();
+                        const eq2Saisie = cols[5].trim();
+
+                        // Si la poule existe dans notre structure générée
+                        if (toutesLesDonneesPoules[nomPouleSaisie]) {
+                            
+                            // Chercher le match généré correspondant
+                            let matchTrouve = toutesLesDonneesPoules[nomPouleSaisie].matchs.find(m => 
+                                m.sport.toLowerCase() === sportSaisi.toLowerCase() &&
+                                ((m.eq1.toLowerCase() === eq1Saisie.toLowerCase() && m.eq2.toLowerCase() === eq2Saisie.toLowerCase()) || 
+                                 (m.eq1.toLowerCase() === eq2Saisie.toLowerCase() && m.eq2.toLowerCase() === eq1Saisie.toLowerCase()))
+                            );
+
+                            if (matchTrouve) {
+                                // VÉRIFICATION DES FORFAITS
+                                const s1StrU = score1StrSaisi.toUpperCase();
+                                const s2StrU = score2StrSaisi.toUpperCase();
+                                
+                                const isF1 = s1StrU === 'F';
+                                const isF48_1 = s1StrU === 'F48' || s1StrU === 'F-48';
+                                const isV1 = s1StrU === 'V';
+                                
+                                const isF2 = s2StrU === 'F';
+                                const isF48_2 = s2StrU === 'F48' || s2StrU === 'F-48';
+                                const isV2 = s2StrU === 'V';
+
+                                const score1Num = parseInt(score1StrSaisi);
+                                const score2Num = parseInt(score2StrSaisi);
+                                
+                                const matchEstJoue = (!isNaN(score1Num) && !isNaN(score2Num)) || isF1 || isF48_1 || isV1 || isF2 || isF48_2 || isV2;
+
+                                if (matchEstJoue) {
+                                    // Mettre à jour le match
+                                    matchTrouve.matchJoue = true;
+                                    
+                                    // Remettre les équipes dans le bon ordre (si elles ont été saisies à l'envers dans Sheets)
+                                    let score1PourCalcul = score1StrSaisi;
+                                    let score2PourCalcul = score2StrSaisi;
+                                    
+                                    if(matchTrouve.eq1.toLowerCase() !== eq1Saisie.toLowerCase()){
+                                        matchTrouve.score1Str = score2StrSaisi;
+                                        matchTrouve.score2Str = score1StrSaisi;
+                                        score1PourCalcul = score2StrSaisi;
+                                        score2PourCalcul = score1StrSaisi;
+                                    } else {
+                                        matchTrouve.score1Str = score1StrSaisi;
+                                        matchTrouve.score2Str = score2StrSaisi;
+                                    }
+
+                                    // CALCULER LES POINTS POUR LE CLASSEMENT
+                                    let stat1 = toutesLesDonneesPoules[nomPouleSaisie].classement[matchTrouve.eq1];
+                                    let stat2 = toutesLesDonneesPoules[nomPouleSaisie].classement[matchTrouve.eq2];
+
+                                    if(stat1 && stat2){
+                                        stat1.joues += 1; stat2.joues += 1;
+
+                                        const calc_s1StrU = score1PourCalcul.toUpperCase();
+                                        const calc_s2StrU = score2PourCalcul.toUpperCase();
+                                        const calc_s1Num = parseInt(score1PourCalcul);
+                                        const calc_s2Num = parseInt(score2PourCalcul);
+
+                                        if (!isNaN(calc_s1Num) && !isNaN(calc_s2Num)) {
+                                            // MATCH NORMAL
+                                            stat1.butsPour += calc_s1Num; stat1.butsContre += calc_s2Num;
+                                            stat2.butsPour += calc_s2Num; stat2.butsContre += calc_s1Num;
+
+                                            if (calc_s1Num > calc_s2Num) {
+                                                stat1.victoires += 1; stat1.pts += PTS_VICTOIRE;
+                                                stat2.defaites += 1; stat2.pts += PTS_DEFAITE;
+                                            } else if (calc_s2Num > calc_s1Num) {
+                                                stat2.victoires += 1; stat2.pts += PTS_VICTOIRE;
+                                                stat1.defaites += 1; stat1.pts += PTS_DEFAITE;
+                                            } else {
+                                                stat1.nuls += 1; stat1.pts += PTS_NUL;
+                                                stat2.nuls += 1; stat2.pts += PTS_NUL;
+                                            }
+                                        } else {
+                                            // GESTION DES FORFAITS (Adaptée au nouvel ordre)
+                                            const calc_isF1 = calc_s1StrU === 'F';
+                                            const calc_isF48_1 = calc_s1StrU === 'F48' || calc_s1StrU === 'F-48';
+                                            const calc_isV1 = calc_s1StrU === 'V';
+                                            const calc_isF2 = calc_s2StrU === 'F';
+                                            const calc_isF48_2 = calc_s2StrU === 'F48' || calc_s2StrU === 'F-48';
+                                            const calc_isV2 = calc_s2StrU === 'V';
+
+                                            if (calc_isF1) { stat1.defaites += 1; stat1.pts += 0; }
+                                            else if (calc_isF48_1) { stat1.defaites += 1; stat1.pts -= 2; }
+                                            else if (calc_isV1 || (!isNaN(calc_s1Num) && calc_s1Num > 0)) {
+                                                stat1.victoires += 1; stat1.pts += PTS_VICTOIRE;
+                                                if (!isNaN(calc_s1Num)) stat1.butsPour += calc_s1Num; 
+                                            }
+
+                                            if (calc_isF2) { stat2.defaites += 1; stat2.pts += 0; }
+                                            else if (calc_isF48_2) { stat2.defaites += 1; stat2.pts -= 2; }
+                                            else if (calc_isV2 || (!isNaN(calc_s2Num) && calc_s2Num > 0)) {
+                                                stat2.victoires += 1; stat2.pts += PTS_VICTOIRE;
+                                                if (!isNaN(calc_s2Num)) stat2.butsPour += calc_s2Num;
+                                            }
+                                        }
+                                        stat1.diff = stat1.butsPour - stat1.butsContre;
+                                        stat2.diff = stat2.butsPour - stat2.butsContre;
+                                    }
+                                }
                             }
-                        });
-
-                        // VÉRIFICATION DES FORFAITS
-                        const s1StrU = score1Str.toUpperCase();
-                        const s2StrU = score2Str.toUpperCase();
-                        
-                        const isF1 = s1StrU === 'F';
-                        const isF48_1 = s1StrU === 'F48' || s1StrU === 'F-48';
-                        const isV1 = s1StrU === 'V';
-                        
-                        const isF2 = s2StrU === 'F';
-                        const isF48_2 = s2StrU === 'F48' || s2StrU === 'F-48';
-                        const isV2 = s2StrU === 'V';
-
-                        const score1 = parseInt(score1Str);
-                        const score2 = parseInt(score2Str);
-                        
-                        // Le match est joué si on a des nombres OU si on détecte une lettre de forfait
-                        const matchJoue = (!isNaN(score1) && !isNaN(score2)) || isF1 || isF48_1 || isV1 || isF2 || isF48_2 || isV2;
-
-                        toutesLesDonneesPoules[nomPoule].matchs.push({ 
-                            date, heure, sport, eq1, eq2, score1Str, score2Str, matchJoue,
-                            logo1: getLogo(eq1), logo2: getLogo(eq2) 
-                        });
-
-                        if (matchJoue && eq1 !== "" && eq2 !== "") {
-                            let stat1 = toutesLesDonneesPoules[nomPoule].classement[eq1];
-                            let stat2 = toutesLesDonneesPoules[nomPoule].classement[eq2];
-
-                            stat1.joues += 1; stat2.joues += 1;
-
-                            if (!isNaN(score1) && !isNaN(score2)) {
-                                // MATCH NORMAL AVEC DES SCORES
-                                stat1.butsPour += score1; stat1.butsContre += score2;
-                                stat2.butsPour += score2; stat2.butsContre += score1;
-
-                                if (score1 > score2) {
-                                    stat1.victoires += 1; stat1.pts += PTS_VICTOIRE;
-                                    stat2.defaites += 1; stat2.pts += PTS_DEFAITE; // Le perdant gagne 1 pt
-                                } else if (score2 > score1) {
-                                    stat2.victoires += 1; stat2.pts += PTS_VICTOIRE;
-                                    stat1.defaites += 1; stat1.pts += PTS_DEFAITE; // Le perdant gagne 1 pt
-                                } else {
-                                    stat1.nuls += 1; stat1.pts += PTS_NUL;
-                                    stat2.nuls += 1; stat2.pts += PTS_NUL;
-                                }
-                            } else {
-                                // GESTION DES FORFAITS
-                                // Équipe 1
-                                if (isF1) {
-                                    stat1.defaites += 1; stat1.pts += 0; // 0 pt
-                                } else if (isF48_1) {
-                                    stat1.defaites += 1; stat1.pts -= 2; // -2 pts
-                                } else if (isV1 || (!isNaN(score1) && score1 > 0)) {
-                                    stat1.victoires += 1; stat1.pts += PTS_VICTOIRE;
-                                    if (!isNaN(score1)) stat1.butsPour += score1; // Si on a mis un score comme 3-F
-                                }
-
-                                // Équipe 2
-                                if (isF2) {
-                                    stat2.defaites += 1; stat2.pts += 0; // 0 pt
-                                } else if (isF48_2) {
-                                    stat2.defaites += 1; stat2.pts -= 2; // -2 pts
-                                } else if (isV2 || (!isNaN(score2) && score2 > 0)) {
-                                    stat2.victoires += 1; stat2.pts += PTS_VICTOIRE;
-                                    if (!isNaN(score2)) stat2.butsPour += score2; // Si on a mis un score comme F-3
-                                }
-                            }
-
-                            stat1.diff = stat1.butsPour - stat1.butsContre;
-                            stat2.diff = stat2.butsPour - stat2.butsContre;
                         }
                     }
                 }
 
                 if (Object.keys(toutesLesDonneesPoules).length === 0) {
-                    container.innerHTML = '<p class="text-center text-gray-400">Aucun résultat disponible.</p>';
+                    container.innerHTML = '<p class="text-center text-gray-400">Aucune équipe trouvée. Remplissez l\'onglet Équipes.</p>';
                     return;
                 }
 
@@ -242,7 +300,7 @@
 
             } catch (e) {
                 console.error(e);
-                container.innerHTML = '<p class="text-center text-red-500 font-bold">Erreur de chargement des résultats.</p>';
+                container.innerHTML = '<p class="text-center text-red-500 font-bold">Erreur de chargement.</p>';
             }
         }
 
@@ -294,14 +352,18 @@
 
                 let htmlAccordions = '';
                 
-                Object.keys(matchsParSport).sort().forEach(sport => {
+                // On s'assure d'afficher les sports dans l'ordre de la liste LISTE_SPORTS
+                LISTE_SPORTS.forEach(sport => {
+                    if(!matchsParSport[sport]) return; // Si pas de match pour ce sport, on passe
+                    
                     let htmlMatchs = '';
                     matchsParSport[sport].forEach(match => {
                         let affichageCentral = '';
                         if (match.matchJoue) {
                             affichageCentral = `<div class="bg-bleu-nuit text-white font-bold px-4 py-2 rounded-lg flex items-center justify-center min-w-[80px] text-lg shadow-sm tracking-widest">${match.score1Str} - ${match.score2Str}</div>`;
                         } else {
-                            affichageCentral = `<div class="bg-gray-100 text-gray-500 text-xs font-bold px-3 py-2 rounded-lg flex flex-col items-center justify-center min-w-[80px] uppercase border border-gray-200 leading-tight"><span>${match.date}</span><span>${match.heure}</span></div>`;
+                            // Match généré mais pas encore joué (pas de score trouvé dans Sheets)
+                            affichageCentral = `<div class="bg-gray-100 text-gray-400 text-[10px] font-bold px-3 py-2 rounded-lg flex flex-col items-center justify-center min-w-[80px] uppercase border border-dashed border-gray-300 leading-tight">À JOUER</div>`;
                         }
 
                         htmlMatchs += `

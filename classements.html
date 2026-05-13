@@ -60,21 +60,20 @@
         </div>
     </main>
 
-    <!-- LA NOUVELLE FENÊTRE POP-UP POUR LES ÉQUIPES -->
+    <!-- FENÊTRE POP-UP POUR LES ÉQUIPES -->
     <div id="modal-equipe" class="hidden fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
             <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-bleu-nuit text-white">
                 <div class="flex items-center space-x-3">
                     <img id="modal-equipe-logo" src="" class="w-10 h-10 rounded-full object-cover border border-white/30 bg-white" onerror="this.style.display='none'">
-                    <h3 id="modal-equipe-nom" class="font-bold uppercase tracking-wider">Nom de l'équipe</h3>
+                    <h3 id="modal-equipe-nom" class="font-bold uppercase tracking-wider text-sm md:text-base">Nom de l'équipe</h3>
                 </div>
-                <button onclick="fermerModalEquipe()" class="text-2xl hover:text-or transition-colors">&times;</button>
+                <button onclick="fermerModalEquipe()" class="text-2xl hover:text-or transition-colors leading-none pb-1">&times;</button>
             </div>
             
             <div class="p-4 overflow-y-auto space-y-3 bg-gray-50">
                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Membres de l'équipe</h4>
                 <ul id="liste-joueurs-equipe" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <!-- Les joueurs s'afficheront ici -->
                 </ul>
             </div>
         </div>
@@ -99,7 +98,6 @@
         const LISTE_SPORTS = ["Football", "Handball", "Ultimate", "Basketball", "Pétanque", "Volleyball"];
         let toutesLesDonneesPoules = {};
         
-        // Nouvelle variable pour stocker les joueurs de chaque équipe
         let joueursParEquipe = {}; 
 
         function convertirLienDrive(url) {
@@ -116,7 +114,6 @@
                 let dictionnaireEquipes = {}; 
                 let dictionnaireLogos = {};
 
-                // 1. CHARGEMENT DES ÉQUIPES ET DES JOUEURS
                 try {
                     const repEquipes = await fetch(lienEquipes);
                     const csvEquipes = await repEquipes.text();
@@ -135,7 +132,6 @@
                             if (!dictionnaireEquipes[pouleEq]) dictionnaireEquipes[pouleEq] = [];
                             dictionnaireEquipes[pouleEq].push({ nom: nomEq, logo: logoEq });
 
-                            // Sauvegarde des joueurs (tout ce qui est après la colonne C / index 2)
                             const listeJoueurs = cols.slice(3).map(j => j.trim()).filter(j => j !== "");
                             joueursParEquipe[nomEq.toLowerCase()] = {
                                 nom: nomEq,
@@ -150,7 +146,6 @@
                     return dictionnaireLogos[nomEquipe.trim().toLowerCase()] || 'https://via.placeholder.com/150/f3f4f6/9ca3af?text=' + nomEquipe.charAt(0).toUpperCase();
                 }
 
-                // 2. GÉNÉRATION DES MATCHS
                 toutesLesDonneesPoules = {};
 
                 Object.keys(dictionnaireEquipes).forEach(nomPoule => {
@@ -182,7 +177,6 @@
                     });
                 });
 
-                // 3. CHARGEMENT DES SCORES
                 const reponseScores = await fetch(lienScores);
                 const csvScores = await reponseScores.text();
                 const lignesScores = csvScores.split('\n');
@@ -341,7 +335,6 @@
                 let htmlTableau = '';
                 classementTrie.forEach((eq, index) => {
                     const isFirst = index === 0;
-                    // NOUVEAU: Le TR est cliquable !
                     htmlTableau += `
                         <tr class="border-b border-gray-100 last:border-0 ${isFirst ? 'bg-orange-50/50' : ''} cursor-pointer hover:bg-gray-100 transition-colors" onclick="ouvrirModalEquipe(\`${eq.nom}\`)">
                             <td class="py-3 px-3 text-center text-gray-400 font-bold">${index + 1}</td>
@@ -377,24 +370,29 @@
                     matchsParSport[sport].forEach(match => {
                         let affichageCentral = '';
                         if (match.matchJoue) {
-                            affichageCentral = `<div class="bg-bleu-nuit text-white font-bold px-4 py-2 rounded-lg flex items-center justify-center min-w-[80px] text-lg shadow-sm tracking-widest">${match.score1Str} - ${match.score2Str}</div>`;
+                            affichageCentral = `<div class="bg-bleu-nuit text-white font-bold px-4 py-2 rounded-lg flex items-center justify-center min-w-[70px] md:min-w-[80px] text-sm md:text-lg shadow-sm tracking-widest">${match.score1Str} - ${match.score2Str}</div>`;
                         } else {
-                            affichageCentral = `<div class="bg-gray-100 text-gray-400 text-[10px] font-bold px-3 py-2 rounded-lg flex flex-col items-center justify-center min-w-[80px] uppercase border border-dashed border-gray-300 leading-tight">À JOUER</div>`;
+                            affichageCentral = `<div class="bg-gray-100 text-gray-400 text-[9px] md:text-[10px] font-bold px-2 md:px-3 py-1.5 md:py-2 rounded-lg flex flex-col items-center justify-center min-w-[70px] md:min-w-[80px] uppercase border border-dashed border-gray-300 leading-tight">À JOUER</div>`;
                         }
 
-                        // NOUVEAU: Les blocs équipes sont cliquables !
+                        // 🌟 LE NOUVEAU DESIGN LIGUE DES CHAMPIONS EST ICI 🌟
                         htmlMatchs += `
-                            <div class="flex items-center justify-between py-4 border-b border-gray-100/50 last:border-0 hover:bg-gray-50 px-2 transition-colors">
-                                <div class="w-1/3 flex items-center justify-end space-x-3 pr-4 cursor-pointer hover:opacity-70 transition-opacity" onclick="ouvrirModalEquipe(\`${match.eq1}\`)">
-                                    <span class="font-bold text-base md:text-lg text-gray-800 truncate text-right">${match.eq1}</span>
-                                    <img src="${match.logo1}" class="w-12 h-12 rounded-full object-cover border border-gray-200 bg-white shadow-sm flex-shrink-0" onerror="this.style.display='none'">
+                            <div class="flex items-center justify-between py-4 border-b border-gray-100/50 last:border-0 hover:bg-gray-50 px-1 md:px-2 transition-colors">
+                                <!-- Équipe 1 (Gauche) -->
+                                <div class="w-1/3 flex flex-col items-center justify-center cursor-pointer hover:opacity-70 transition-opacity" onclick="ouvrirModalEquipe(\`${match.eq1}\`)">
+                                    <img src="${match.logo1}" class="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border border-gray-200 bg-white shadow-sm mb-1" onerror="this.style.display='none'">
+                                    <span class="font-bold text-[10px] md:text-xs text-gray-800 text-center leading-tight line-clamp-2 uppercase">${match.eq1}</span>
                                 </div>
                                 
-                                <div class="w-auto flex-shrink-0 z-10">${affichageCentral}</div>
+                                <!-- Centre (Bouton) -->
+                                <div class="w-1/3 flex justify-center flex-shrink-0 z-10 px-1">
+                                    ${affichageCentral}
+                                </div>
                                 
-                                <div class="w-1/3 flex items-center justify-start space-x-3 pl-4 cursor-pointer hover:opacity-70 transition-opacity" onclick="ouvrirModalEquipe(\`${match.eq2}\`)">
-                                    <img src="${match.logo2}" class="w-12 h-12 rounded-full object-cover border border-gray-200 bg-white shadow-sm flex-shrink-0" onerror="this.style.display='none'">
-                                    <span class="font-bold text-base md:text-lg text-gray-800 truncate text-left">${match.eq2}</span>
+                                <!-- Équipe 2 (Droite) -->
+                                <div class="w-1/3 flex flex-col items-center justify-center cursor-pointer hover:opacity-70 transition-opacity" onclick="ouvrirModalEquipe(\`${match.eq2}\`)">
+                                    <img src="${match.logo2}" class="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border border-gray-200 bg-white shadow-sm mb-1" onerror="this.style.display='none'">
+                                    <span class="font-bold text-[10px] md:text-xs text-gray-800 text-center leading-tight line-clamp-2 uppercase">${match.eq2}</span>
                                 </div>
                             </div>
                         `;
@@ -447,18 +445,15 @@
             });
         }
 
-        // --- FONCTIONS POUR GÉRER LA FENÊTRE POP-UP DES ÉQUIPES ---
         function ouvrirModalEquipe(nom) {
             const eqData = joueursParEquipe[nom.toLowerCase()];
             if (!eqData) return;
 
-            // Remplir l'en-tête
             document.getElementById('modal-equipe-nom').innerText = eqData.nom;
             const logoImg = document.getElementById('modal-equipe-logo');
             logoImg.src = eqData.logo;
             logoImg.style.display = 'block';
 
-            // Remplir la liste des joueurs
             const listeContainer = document.getElementById('liste-joueurs-equipe');
             listeContainer.innerHTML = '';
 
@@ -466,7 +461,6 @@
                 listeContainer.innerHTML = '<p class="text-gray-500 text-sm italic col-span-2">Aucun joueur renseigné.</p>';
             } else {
                 eqData.joueurs.forEach(joueur => {
-                    // Au cas où plusieurs joueurs sont séparés par une virgule dans une même case
                     const sousJoueurs = joueur.split(',').map(j => j.trim()).filter(j => j !== "");
                     sousJoueurs.forEach(subJ => {
                         listeContainer.innerHTML += `
@@ -479,7 +473,6 @@
                 });
             }
             
-            // Afficher la modale
             document.getElementById('modal-equipe').classList.remove('hidden');
         }
 
@@ -487,7 +480,6 @@
             document.getElementById('modal-equipe').classList.add('hidden');
         }
 
-        // Fermer la modale quand on clique dans le vide à côté
         document.getElementById('modal-equipe').addEventListener('click', function(e) {
             if (e.target === this) fermerModalEquipe();
         });

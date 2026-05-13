@@ -78,9 +78,9 @@
         const lienScores = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrPajxY5p2VL-Yc0SjGmHHORVuvg_9g5wRXUzQxwSnQ9Q8tEmSi01V9Xb1xM0eQ5HdG9tbJqmzw0CX/pub?output=csv'; 
         const lienEquipes = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS8Y_nW7rxI_qmpjOFAfA_ajqmzq9beBImqjUN85CfDs0Hxq8aSk7zEq_BrFkMPPX2IhvbaJZusCHxN/pub?output=csv'; 
 
-        const PTS_VICTOIRE = 3;
-        const PTS_NUL = 1;
-        const PTS_DEFAITE = 0;
+        const PTS_VICTOIRE = 4;
+        const PTS_NUL = 2;
+        const PTS_DEFAITE = 1;
 
         let toutesLesDonneesPoules = {};
 
@@ -125,12 +125,11 @@
                     if (lignes[i].trim() === "") continue;
                     const cols = lignes[i].split(separateur);
 
-                    // ATTENTION: Format attendu -> Date, Heure, Sport, Poule, Eq1, Score1, Score2, Eq2
                     if (cols.length >= 8 && cols[0].trim() !== "") {
                         const date = cols[0].trim();
                         const heure = cols[1].trim();
-                        const sport = cols[2].trim(); // Colonne C du Sheet
-                        const nomPoule = cols[3].trim(); // Colonne D
+                        const sport = cols[2].trim(); 
+                        const nomPoule = cols[3].trim(); 
                         const eq1 = cols[4].trim();
                         const score1Str = cols[5].trim();
                         const score2Str = cols[6].trim();
@@ -140,7 +139,6 @@
                             toutesLesDonneesPoules[nomPoule] = { classement: {}, matchs: [] };
                         }
 
-                        // Le code récupère automatiquement les équipes citées ici !
                         [eq1, eq2].forEach(eq => {
                             if (eq !== "" && !toutesLesDonneesPoules[nomPoule].classement[eq]) {
                                 toutesLesDonneesPoules[nomPoule].classement[eq] = { 
@@ -150,9 +148,23 @@
                             }
                         });
 
+                        // VÉRIFICATION DES FORFAITS
+                        const s1StrU = score1Str.toUpperCase();
+                        const s2StrU = score2Str.toUpperCase();
+                        
+                        const isF1 = s1StrU === 'F';
+                        const isF48_1 = s1StrU === 'F48' || s1StrU === 'F-48';
+                        const isV1 = s1StrU === 'V';
+                        
+                        const isF2 = s2StrU === 'F';
+                        const isF48_2 = s2StrU === 'F48' || s2StrU === 'F-48';
+                        const isV2 = s2StrU === 'V';
+
                         const score1 = parseInt(score1Str);
                         const score2 = parseInt(score2Str);
-                        const matchJoue = !isNaN(score1) && !isNaN(score2);
+                        
+                        // Le match est joué si on a des nombres OU si on détecte une lettre de forfait
+                        const matchJoue = (!isNaN(score1) && !isNaN(score2)) || isF1 || isF48_1 || isV1 || isF2 || isF48_2 || isV2;
 
                         toutesLesDonneesPoules[nomPoule].matchs.push({ 
                             date, heure, sport, eq1, eq2, score1Str, score2Str, matchJoue,
@@ -164,18 +176,43 @@
                             let stat2 = toutesLesDonneesPoules[nomPoule].classement[eq2];
 
                             stat1.joues += 1; stat2.joues += 1;
-                            stat1.butsPour += score1; stat1.butsContre += score2;
-                            stat2.butsPour += score2; stat2.butsContre += score1;
 
-                            if (score1 > score2) {
-                                stat1.victoires += 1; stat1.pts += PTS_VICTOIRE;
-                                stat2.defaites += 1; stat2.pts += PTS_DEFAITE;
-                            } else if (score2 > score1) {
-                                stat2.victoires += 1; stat2.pts += PTS_VICTOIRE;
-                                stat1.defaites += 1; stat1.pts += PTS_DEFAITE;
+                            if (!isNaN(score1) && !isNaN(score2)) {
+                                // MATCH NORMAL AVEC DES SCORES
+                                stat1.butsPour += score1; stat1.butsContre += score2;
+                                stat2.butsPour += score2; stat2.butsContre += score1;
+
+                                if (score1 > score2) {
+                                    stat1.victoires += 1; stat1.pts += PTS_VICTOIRE;
+                                    stat2.defaites += 1; stat2.pts += PTS_DEFAITE; // Le perdant gagne 1 pt
+                                } else if (score2 > score1) {
+                                    stat2.victoires += 1; stat2.pts += PTS_VICTOIRE;
+                                    stat1.defaites += 1; stat1.pts += PTS_DEFAITE; // Le perdant gagne 1 pt
+                                } else {
+                                    stat1.nuls += 1; stat1.pts += PTS_NUL;
+                                    stat2.nuls += 1; stat2.pts += PTS_NUL;
+                                }
                             } else {
-                                stat1.nuls += 1; stat1.pts += PTS_NUL;
-                                stat2.nuls += 1; stat2.pts += PTS_NUL;
+                                // GESTION DES FORFAITS
+                                // Équipe 1
+                                if (isF1) {
+                                    stat1.defaites += 1; stat1.pts += 0; // 0 pt
+                                } else if (isF48_1) {
+                                    stat1.defaites += 1; stat1.pts -= 2; // -2 pts
+                                } else if (isV1 || (!isNaN(score1) && score1 > 0)) {
+                                    stat1.victoires += 1; stat1.pts += PTS_VICTOIRE;
+                                    if (!isNaN(score1)) stat1.butsPour += score1; // Si on a mis un score comme 3-F
+                                }
+
+                                // Équipe 2
+                                if (isF2) {
+                                    stat2.defaites += 1; stat2.pts += 0; // 0 pt
+                                } else if (isF48_2) {
+                                    stat2.defaites += 1; stat2.pts -= 2; // -2 pts
+                                } else if (isV2 || (!isNaN(score2) && score2 > 0)) {
+                                    stat2.victoires += 1; stat2.pts += PTS_VICTOIRE;
+                                    if (!isNaN(score2)) stat2.butsPour += score2; // Si on a mis un score comme F-3
+                                }
                             }
 
                             stat1.diff = stat1.butsPour - stat1.butsContre;
@@ -247,7 +284,7 @@
                     `;
                 });
 
-                // ON REGroupe LES MATCHS PAR SPORT
+                // ON REGROUPE LES MATCHS PAR SPORT
                 let matchsParSport = {};
                 poule.matchs.forEach(match => {
                     let sportCle = match.sport || "Autres";

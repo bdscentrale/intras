@@ -46,7 +46,6 @@
     <main class="p-4 mt-4 space-y-6 max-w-4xl mx-auto">
         
         <section class="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <!-- Haut : Titre + Menus déroulants -->
             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <h2 class="font-bold text-xl text-bleu-nuit">PLANNING DES MATCHS</h2>
                 <div class="grid grid-cols-3 gap-2 w-full md:w-auto">
@@ -64,7 +63,6 @@
                 </div>
             </div>
             
-            <!-- Bas : Barre de recherche -->
             <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
                 <span class="text-gray-400 mr-2 text-lg">🔍</span>
                 <input type="text" id="recherche-equipe" onkeyup="filtrerMatchs()" placeholder="Rechercher une équipe..." 
@@ -82,7 +80,8 @@
         <a href="planning.html" class="flex flex-col items-center text-or"><span class="text-xl">📅</span><span class="text-[10px] font-bold mt-1">PLANNING</span></a>
         <a href="equipes.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">👥</span><span class="text-[10px] mt-1">ÉQUIPES</span></a>
         <a href="staff.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🦺</span><span class="text-[10px] mt-1">STAFF</span></a>
-<a href="classements.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏆</span><span class="text-[10px] mt-1 uppercase">CLASSEMENTS</span></a>    </nav>
+        <a href="classements.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏆</span><span class="text-[10px] mt-1 uppercase">CLASSEMENTS</span></a>    
+    </nav>
 
     <script>
         const lienGoogleSheet = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4HyMZ9cf-z5kWEIc_8G07U2uHUR5TFjArrRc1VzoXN_-p-jHAso-6S2g60FxUas9KoyLT7o_ZTWPq/pub?output=csv';
@@ -107,13 +106,14 @@
 
                     if (colonnes.length >= 7 && colonnes[0].trim() !== "") {
                         const match = {
-                            date: colonnes[0].trim(),
-                            heure: colonnes[1].trim(),
-                            sport: colonnes[2].trim(),
-                            poule: colonnes[3].trim(),
-                            eq1: colonnes[4].trim(), // C'est ici qu'on a toutes nos équipes
-                            eq2: colonnes[5].trim(),
-                            lieu: colonnes[6].trim()
+                            date: colonnes[0] ? colonnes[0].trim() : "",
+                            heure: colonnes[1] ? colonnes[1].trim() : "",
+                            sport: colonnes[2] ? colonnes[2].trim() : "",
+                            poule: colonnes[3] ? colonnes[3].trim() : "",
+                            eq1: colonnes[4] ? colonnes[4].trim() : "", 
+                            eq2: colonnes[5] ? colonnes[5].trim() : "",
+                            lieu: colonnes[6] ? colonnes[6].trim() : "",
+                            arbitre: colonnes[7] ? colonnes[7].trim() : "" 
                         };
                         tousLesMatchs.push(match);
                         
@@ -160,6 +160,9 @@
             }
 
             listeDeMatchs.forEach(match => {
+                // L'émoji a été retiré ici !
+                const affichageArbitre = match.arbitre ? `<span>Arbitre : <span class="font-bold text-gray-700">${match.arbitre}</span></span>` : '';
+
                 const carteHTML = `
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow">
                         <div class="text-4xl bg-orange-50 w-16 h-16 flex items-center justify-center rounded-full mr-4 border border-orange-100 flex-shrink-0">${match.sport}</div>
@@ -169,7 +172,11 @@
                                 <span class="text-xs font-bold text-or bg-orange-50 px-2 py-1 rounded">${match.date} - ${match.heure}</span>
                             </div>
                             <p class="text-sm mt-2 text-gray-700 leading-relaxed"><strong>Équipes :</strong> ${match.eq1}</p>
-                            <p class="text-xs text-gray-400 mt-2">📍 ${match.lieu}</p>
+                            
+                            <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
+                                <span>📍 ${match.lieu}</span>
+                                ${affichageArbitre}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -181,14 +188,13 @@
             const dateChoisie = document.getElementById('filtre-date').value;
             const pouleChoisie = document.getElementById('filtre-poule').value;
             const sportChoisi = document.getElementById('filtre-sport').value;
-            const texteRecherche = document.getElementById('recherche-equipe').value.toLowerCase(); // NOUVEAU
+            const texteRecherche = document.getElementById('recherche-equipe').value.toLowerCase(); 
 
             const matchsFiltres = tousLesMatchs.filter(match => {
                 const dateOk = (dateChoisie === 'Toutes') || (match.date === dateChoisie);
                 const pouleOk = (pouleChoisie === 'Toutes') || (match.poule === pouleChoisie);
                 const sportOk = (sportChoisi === 'Toutes') || (match.sport === sportChoisi);
                 
-                // NOUVEAU : On vérifie si le texte tapé se trouve dans la liste des équipes
                 const rechercheOk = match.eq1.toLowerCase().includes(texteRecherche); 
                 
                 return dateOk && pouleOk && sportOk && rechercheOk;

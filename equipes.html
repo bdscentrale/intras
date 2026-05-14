@@ -142,9 +142,10 @@
         function afficherEquipes(liste) {
             const container = document.getElementById('equipes-container');
             container.innerHTML = ''; 
-            liste.forEach((eq, index) => {
+            liste.forEach((eq) => { // Plus besoin de l'index ici !
+                // On passe le NOM de l'équipe au lieu de son numéro
                 container.innerHTML += `
-                    <div onclick="ouvrirModal(${index})" class="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform group">
+                    <div onclick="ouvrirModal(\`${eq.nom}\`)" class="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform group">
                         <div class="w-20 h-20 bg-gray-200 rounded-full border-4 border-white shadow-md overflow-hidden group-hover:border-or transition-colors bg-white">
                             <img src="${eq.logo}" class="w-full h-full object-cover" onerror="this.style.display='none'">
                         </div>
@@ -153,13 +154,16 @@
             });
         }
 
-        function ouvrirModal(index) {
-            const eq = toutesLesEquipes[index];
+        function ouvrirModal(nomEquipe) {
+            // Le code cherche l'équipe par son nom dans la grande liste
+            const eq = toutesLesEquipes.find(e => e.nom === nomEquipe);
+            if (!eq) return; // Petite sécurité au cas où
+
             document.getElementById('modal-nom').innerText = eq.nom;
             
             const imgEl = document.getElementById('modal-image');
             imgEl.src = eq.logo;
-            imgEl.style.display = eq.logo ? 'block' : 'none'; // Cache l'image si elle n'existe pas
+            imgEl.style.display = eq.logo ? 'block' : 'none'; 
             
             document.getElementById('modal-capitaine').innerText = eq.capitaine || "-";
             

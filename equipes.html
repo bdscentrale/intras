@@ -19,7 +19,7 @@
         }
     </script>
 </head>
-<body class="bg-gray-50 text-gray-800 pb-32 md:pb-0 font-sans"> <!-- La modification est ici ! -->
+<body class="bg-gray-50 text-gray-800 pb-32 md:pb-0 font-sans">
 
     <header class="bg-gradient-to-r from-bleu-nuit to-indigo-900 text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md">
         
@@ -60,13 +60,13 @@
         <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative">
             <button onclick="fermerModal()" class="absolute top-3 right-3 bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center font-bold text-gray-500">X</button>
             <div class="p-6 flex flex-col items-center">
-                <img id="modal-image" src="" alt="Logo" class="w-24 h-24 rounded-full object-cover border-4 border-or shadow-md mb-4">
+                <img id="modal-image" src="" alt="Logo" class="w-24 h-24 rounded-full object-cover border-4 border-or shadow-md mb-4" onerror="this.style.display='none'">
                 <h3 id="modal-nom" class="text-2xl font-bold text-bleu-nuit text-center mb-2">Nom</h3>
                 <div class="w-full bg-orange-50 rounded-lg p-3 mb-4 text-center border border-orange-100">
                     <p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Capitaine</p>
                     <p id="modal-capitaine" class="font-bold text-or">-</p>
                 </div>
-                <div class="w-full">
+                <div class="w-full max-h-[40vh] overflow-y-auto">
                     <p class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-2">Joueurs</p>
                     <ul id="modal-joueurs" class="text-sm text-gray-700 space-y-1 list-none"></ul>
                 </div>
@@ -79,7 +79,8 @@
         <a href="planning.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">📅</span><span class="text-[10px] mt-1">PLANNING</span></a>
         <a href="equipes.html" class="flex flex-col items-center text-or"><span class="text-xl">👥</span><span class="text-[10px] font-bold mt-1">ÉQUIPES</span></a>
         <a href="staff.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🦺</span><span class="text-[10px] mt-1">STAFF</span></a>
-<a href="classements.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏆</span><span class="text-[10px] mt-1 uppercase">CLASSEMENTS</span></a>    </nav>
+        <a href="classements.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏆</span><span class="text-[10px] mt-1 uppercase">CLASSEMENTS</span></a>
+    </nav>
 
     <script>
         // 🚨 REMETS TON LIEN CSV ICI 🚨
@@ -111,12 +112,13 @@
                     if (lignes[i].trim() === "") continue; 
                     const colonnes = lignes[i].split(separateurColonnes);
 
-                    if (colonnes.length >= 3 && colonnes[0].trim() !== "") {
+                    // On vérifie qu'on a bien au moins 4 colonnes (Nom, Logo, Poule, Capitaine)
+                    if (colonnes.length >= 4 && colonnes[0].trim() !== "") {
                         
-                        // 🌟 LOGIQUE POUR RAMASSER TOUS LES JOUEURS 🌟
                         let listeNomsJoueurs = [];
-                        // On commence à l'index 3 (4ème colonne) et on va jusqu'à la fin
-                        for (let j = 3; j < colonnes.length; j++) {
+                        // On commence à l'index 4 car :
+                        // 0 = Nom, 1 = Logo, 2 = Poule, 3 = Capitaine
+                        for (let j = 4; j < colonnes.length; j++) {
                             let nom = colonnes[j].trim();
                             if (nom !== "") {
                                 listeNomsJoueurs.push(nom);
@@ -126,14 +128,14 @@
                         toutesLesEquipes.push({
                             nom: colonnes[0].trim(),
                             logo: convertirLienDrive(colonnes[1].trim()),
-                            capitaine: colonnes[2].trim(),
-                            joueurs: listeNomsJoueurs // C'est maintenant un tableau de noms
+                            capitaine: colonnes[3].trim(), // C'est ici la correction (index 3 au lieu de 2)
+                            joueurs: listeNomsJoueurs 
                         });
                     }
                 }
                 afficherEquipes(toutesLesEquipes);
             } catch (e) {
-                container.innerHTML = 'Erreur de chargement';
+                container.innerHTML = '<p class="text-center text-red-500 font-bold col-span-3 md:col-span-6">Erreur de chargement</p>';
             }
         }
 
@@ -144,7 +146,7 @@
                 container.innerHTML += `
                     <div onclick="ouvrirModal(${index})" class="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform group">
                         <div class="w-20 h-20 bg-gray-200 rounded-full border-4 border-white shadow-md overflow-hidden group-hover:border-or transition-colors bg-white">
-                            <img src="${eq.logo}" class="w-full h-full object-cover">
+                            <img src="${eq.logo}" class="w-full h-full object-cover" onerror="this.style.display='none'">
                         </div>
                         <h3 class="font-bold text-xs text-center mt-2 text-bleu-nuit uppercase">${eq.nom}</h3>
                     </div>`;
@@ -154,16 +156,23 @@
         function ouvrirModal(index) {
             const eq = toutesLesEquipes[index];
             document.getElementById('modal-nom').innerText = eq.nom;
-            document.getElementById('modal-image').src = eq.logo;
-            document.getElementById('modal-capitaine').innerText = eq.capitaine;
+            
+            const imgEl = document.getElementById('modal-image');
+            imgEl.src = eq.logo;
+            imgEl.style.display = eq.logo ? 'block' : 'none'; // Cache l'image si elle n'existe pas
+            
+            document.getElementById('modal-capitaine').innerText = eq.capitaine || "-";
             
             const ul = document.getElementById('modal-joueurs');
             ul.innerHTML = '';
             
-            // On affiche chaque joueur du tableau
-            eq.joueurs.forEach(joueur => {
-                ul.innerHTML += `<li>• ${joueur}</li>`;
-            });
+            if (eq.joueurs.length === 0) {
+                 ul.innerHTML = '<li class="text-gray-400 italic">Aucun joueur renseigné.</li>';
+            } else {
+                eq.joueurs.forEach(joueur => {
+                    ul.innerHTML += `<li>• ${joueur}</li>`;
+                });
+            }
 
             document.getElementById('modal-equipe').classList.remove('hidden');
         }

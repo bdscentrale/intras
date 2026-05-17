@@ -96,11 +96,22 @@
     </nav>
 
     <script>
-        // 1. LE LIEN DE TON PLANNING GÉNÉRAL
         const lienGoogleSheet = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4HyMZ9cf-z5kWEIc_8G07U2uHUR5TFjArrRc1VzoXN_-p-jHAso-6S2g60FxUas9KoyLT7o_ZTWPq/pub?output=csv';
-        
-        // 2. LE LIEN DE TES HORAIRES DÉTAILLÉS (À CHANGER !)
-        const lienDetailsMatchs = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrPajxY5p2VL-Yc0SjGmHHORVuvg_9g5wRXUzQxwSnQ9Q8tEmSi01V9Xb1xM0eQ5HdG9tbJqmzw0CX/pub?output=csv';
+        const lienDetailsMatchs = '🚨 METS LE LIEN DE TON NOUVEAU SHEET ICI 🚨';
+
+        // 🌟 LE DICTIONNAIRE TRADUCTEUR ÉMOJI -> TEXTE 🌟
+        const dicoSports = {
+            "🏀": "Basketball",
+            "🤾": "Handball",
+            "🤾‍♂️": "Handball",
+            "⚽": "Football",
+            "⚽️": "Football",
+            "🥏": "Ultimate",
+            "🏐": "Volleyball",
+            "🥎": "Pétanque",
+            "🎳": "Pétanque",
+            "🎯": "Pétanque"
+        };
 
         let tousLesMatchs = [];
         let tousLesDetails = [];
@@ -109,7 +120,6 @@
             const container = document.getElementById('matchs-container');
             
             try {
-                // Chargement du tableau principal
                 const reponse = await fetch(lienGoogleSheet);
                 const donneesBrutes = await reponse.text();
                 const lignes = donneesBrutes.split('\n');
@@ -141,7 +151,6 @@
                     }
                 }
 
-                // Chargement des détails
                 try {
                     const repDetails = await fetch(lienDetailsMatchs);
                     const csvDetails = await repDetails.text();
@@ -150,7 +159,6 @@
 
                     for (let i = 1; i < lignesDet.length; i++) {
                         const col = lignesDet[i].split(sepDet);
-                        // Format attendu: Sport, heure, Poule, Équipe 1, Score 1, Score 2, Équipe 2
                         if(col.length >= 7 && col[0].trim() !== "") {
                             tousLesDetails.push({
                                 sport: col[0].trim(),
@@ -161,7 +169,7 @@
                             });
                         }
                     }
-                } catch (e) { console.log("Le fichier des détails n'a pas pu être chargé, vérifie le lien."); }
+                } catch (e) { console.log("Fichier détails non chargé."); }
 
                 remplirFiltres(datesDisponibles, poulesDisponibles, sportsDisponibles);
                 afficherMatchs(tousLesMatchs);
@@ -208,7 +216,7 @@
                             <div class="text-4xl bg-orange-50 w-16 h-16 flex items-center justify-center rounded-full mr-4 border border-orange-100 flex-shrink-0">${match.sport}</div>
                             <div class="flex-grow">
                                 <div class="flex justify-between items-start">
-                                    <span class="font-bold text-bleu-nuit">POULE ${match.poule}</span>
+                                    <span class="font-bold text-bleu-nuit uppercase">POULE ${match.poule}</span>
                                     <span class="text-xs font-bold text-or bg-orange-50 px-2 py-1 rounded">${match.date} - ${match.heure}</span>
                                 </div>
                                 <p class="text-sm mt-2 text-gray-700 leading-relaxed"><strong>Équipes :</strong> ${match.eq1}</p>
@@ -247,14 +255,17 @@
             afficherMatchs(matchsFiltres);
         }
 
-        // --- FONCTIONS POUR LA MODALE DES DÉTAILS ---
-        function ouvrirModalDetails(sport, poule) {
-            document.getElementById('modal-details-titre').innerText = `DÉTAILS : ${sport} - POULE ${poule}`;
+        function ouvrirModalDetails(sportEmoji, poule) {
+            // 🌟 On traduit l'émoji en texte grâce au dictionnaire
+            const sportTexte = dicoSports[sportEmoji.trim()] || sportEmoji.trim();
+
+            document.getElementById('modal-details-titre').innerText = `DÉTAILS : ${sportEmoji} - POULE ${poule}`;
             const container = document.getElementById('liste-details-matchs');
             container.innerHTML = '';
 
+            // 🌟 On filtre en comparant avec le nom textuel (ex: "Basketball")
             const detailsFiltres = tousLesDetails.filter(d => 
-                d.sport.toLowerCase() === sport.toLowerCase() && 
+                d.sport.toLowerCase() === sportTexte.toLowerCase() && 
                 d.poule.toLowerCase() === poule.toLowerCase()
             );
 

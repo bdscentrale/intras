@@ -75,6 +75,18 @@
         </section>
     </main>
 
+    <div id="modal-details" class="hidden fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-bleu-nuit text-white">
+                <h3 id="modal-details-titre" class="font-bold uppercase tracking-wider text-sm md:text-base">Détails du match</h3>
+                <button onclick="fermerModalDetails()" class="text-2xl hover:text-or transition-colors leading-none pb-1">&times;</button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto space-y-2 bg-gray-50" id="liste-details-matchs">
+                </div>
+        </div>
+    </div>
+
     <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
         <a href="index.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏠</span><span class="text-[10px] mt-1">ACCUEIL</span></a>
         <a href="planning.html" class="flex flex-col items-center text-or"><span class="text-xl">📅</span><span class="text-[10px] font-bold mt-1">PLANNING</span></a>
@@ -84,14 +96,20 @@
     </nav>
 
     <script>
+        // 1. LE LIEN DE TON PLANNING GÉNÉRAL
         const lienGoogleSheet = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS4HyMZ9cf-z5kWEIc_8G07U2uHUR5TFjArrRc1VzoXN_-p-jHAso-6S2g60FxUas9KoyLT7o_ZTWPq/pub?output=csv';
+        
+        // 2. LE LIEN DE TES HORAIRES DÉTAILLÉS (À CHANGER !)
+        const lienDetailsMatchs = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrPajxY5p2VL-Yc0SjGmHHORVuvg_9g5wRXUzQxwSnQ9Q8tEmSi01V9Xb1xM0eQ5HdG9tbJqmzw0CX/pub?output=csv';
 
         let tousLesMatchs = [];
+        let tousLesDetails = [];
 
         async function chargerMatchs() {
             const container = document.getElementById('matchs-container');
             
             try {
+                // Chargement du tableau principal
                 const reponse = await fetch(lienGoogleSheet);
                 const donneesBrutes = await reponse.text();
                 const lignes = donneesBrutes.split('\n');
@@ -122,6 +140,28 @@
                         sportsDisponibles.add(match.sport);
                     }
                 }
+
+                // Chargement des détails
+                try {
+                    const repDetails = await fetch(lienDetailsMatchs);
+                    const csvDetails = await repDetails.text();
+                    const lignesDet = csvDetails.split('\n');
+                    const sepDet = (lignesDet[0].split(';').length > lignesDet[0].split(',').length) ? ';' : ',';
+
+                    for (let i = 1; i < lignesDet.length; i++) {
+                        const col = lignesDet[i].split(sepDet);
+                        // Format attendu: Sport, heure, Poule, Équipe 1, Score 1, Score 2, Équipe 2
+                        if(col.length >= 7 && col[0].trim() !== "") {
+                            tousLesDetails.push({
+                                sport: col[0].trim(),
+                                heure: col[1].trim(),
+                                poule: col[2].trim(),
+                                eq1: col[3].trim(),
+                                eq2: col[6].trim()
+                            });
+                        }
+                    }
+                } catch (e) { console.log("Le fichier des détails n'a pas pu être chargé, vérifie le lien."); }
 
                 remplirFiltres(datesDisponibles, poulesDisponibles, sportsDisponibles);
                 afficherMatchs(tousLesMatchs);
@@ -160,23 +200,27 @@
             }
 
             listeDeMatchs.forEach(match => {
-                // L'émoji a été retiré ici !
                 const affichageArbitre = match.arbitre ? `<span>Arbitre : <span class="font-bold text-gray-700">${match.arbitre}</span></span>` : '';
 
                 const carteHTML = `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow">
-                        <div class="text-4xl bg-orange-50 w-16 h-16 flex items-center justify-center rounded-full mr-4 border border-orange-100 flex-shrink-0">${match.sport}</div>
-                        <div class="flex-grow">
-                            <div class="flex justify-between items-start">
-                                <span class="font-bold text-bleu-nuit">POULE ${match.poule}</span>
-                                <span class="text-xs font-bold text-or bg-orange-50 px-2 py-1 rounded">${match.date} - ${match.heure}</span>
+                    <div onclick="ouvrirModalDetails('${match.sport}', '${match.poule}')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow cursor-pointer hover:border-or group">
+                        <div class="flex items-center">
+                            <div class="text-4xl bg-orange-50 w-16 h-16 flex items-center justify-center rounded-full mr-4 border border-orange-100 flex-shrink-0">${match.sport}</div>
+                            <div class="flex-grow">
+                                <div class="flex justify-between items-start">
+                                    <span class="font-bold text-bleu-nuit">POULE ${match.poule}</span>
+                                    <span class="text-xs font-bold text-or bg-orange-50 px-2 py-1 rounded">${match.date} - ${match.heure}</span>
+                                </div>
+                                <p class="text-sm mt-2 text-gray-700 leading-relaxed"><strong>Équipes :</strong> ${match.eq1}</p>
+                                
+                                <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
+                                    <span>📍 ${match.lieu}</span>
+                                    ${affichageArbitre}
+                                </div>
                             </div>
-                            <p class="text-sm mt-2 text-gray-700 leading-relaxed"><strong>Équipes :</strong> ${match.eq1}</p>
-                            
-                            <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
-                                <span>📍 ${match.lieu}</span>
-                                ${affichageArbitre}
-                            </div>
+                        </div>
+                        <div class="w-full text-center mt-3 pt-2 border-t border-gray-50 text-[10px] text-gray-400 font-bold uppercase tracking-widest group-hover:text-or transition-colors">
+                            👉 Cliquez pour voir les horaires détaillés
                         </div>
                     </div>
                 `;
@@ -202,6 +246,45 @@
 
             afficherMatchs(matchsFiltres);
         }
+
+        // --- FONCTIONS POUR LA MODALE DES DÉTAILS ---
+        function ouvrirModalDetails(sport, poule) {
+            document.getElementById('modal-details-titre').innerText = `DÉTAILS : ${sport} - POULE ${poule}`;
+            const container = document.getElementById('liste-details-matchs');
+            container.innerHTML = '';
+
+            const detailsFiltres = tousLesDetails.filter(d => 
+                d.sport.toLowerCase() === sport.toLowerCase() && 
+                d.poule.toLowerCase() === poule.toLowerCase()
+            );
+
+            if (detailsFiltres.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm text-center italic py-4">Aucun détail disponible pour cette poule pour le moment.</p>';
+            } else {
+                detailsFiltres.forEach(d => {
+                    container.innerHTML += `
+                        <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between hover:bg-gray-50 transition-colors">
+                            <div class="text-or font-bold text-sm w-16 flex-shrink-0">${d.heure}</div>
+                            <div class="flex-grow flex justify-between items-center text-sm px-2">
+                                <span class="font-bold text-gray-800 text-right w-[40%] truncate">${d.eq1}</span>
+                                <span class="text-gray-300 text-[10px] mx-2 uppercase">VS</span>
+                                <span class="font-bold text-gray-800 text-left w-[40%] truncate">${d.eq2}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('modal-details').classList.remove('hidden');
+        }
+
+        function fermerModalDetails() {
+            document.getElementById('modal-details').classList.add('hidden');
+        }
+
+        document.getElementById('modal-details').addEventListener('click', function(e) {
+            if (e.target === this) fermerModalDetails();
+        });
 
         chargerMatchs();
     </script>

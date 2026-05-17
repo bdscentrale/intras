@@ -186,12 +186,13 @@
                     const cols = lignesScores[i].split(separateurScores);
 
                     if (cols.length >= 6 && cols[0].trim() !== "") {
-                        const sportSaisi = cols[0].trim();
-                        const nomPouleSaisie = cols[1].trim().toUpperCase();
-                        const eq1Saisie = cols[2].trim();
-                        const score1StrSaisi = cols[3].trim();
-                        const score2StrSaisi = cols[4].trim();
-                        const eq2Saisie = cols[5].trim();
+                        
+                    const sportSaisi = cols[0].trim();
+                    const nomPouleSaisie = cols[2].trim().toUpperCase();
+                    const eq1Saisie = cols[3].trim();
+                    const score1StrSaisi = cols[4].trim();
+                    const score2StrSaisi = cols[5].trim();
+                    const eq2Saisie = cols[6].trim();
 
                         if (toutesLesDonneesPoules[nomPouleSaisie]) {
                             

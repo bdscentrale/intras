@@ -49,23 +49,12 @@
             </div>
         </div>
 
-        <!-- SÉLECTION DU SPORT -->
-        <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                <h2 class="font-bold text-xl text-bleu-nuit flex items-center gap-2 uppercase tracking-wide">
-                    Tableau Final
-                </h2>
-                <select id="filtre-sport" onchange="changerSport()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm font-bold rounded-lg focus:ring-or focus:border-or block w-full md:w-auto p-2.5">
-                    <!-- Options injectées en JS -->
-                </select>
-            </div>
-        </section>
-
-        <!-- ZONE D'AFFICHAGE DU TABLEAU -->
+        <!-- ZONE D'AFFICHAGE DU TABLEAU (BRACKET) -->
         <section class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             
+            <!-- EN-TÊTE DU TOUR (Navigation) -->
             <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
-                <h3 id="titre-phase" class="font-bold text-gray-800 text-lg">Chargement...</h3>
+                <h3 id="titre-phase" class="font-bold text-gray-800 text-lg uppercase tracking-wide">Chargement...</h3>
                 <div class="text-xs text-blue-600 font-semibold space-x-2 flex">
                     <button id="btn-prev" onclick="phasePrecedente()" class="hover:underline opacity-50 cursor-not-allowed">tour préc.</button>
                     <span class="text-gray-300">|</span>
@@ -73,7 +62,8 @@
                 </div>
             </div>
 
-            <div id="matchs-container" class="p-4 space-y-4">
+            <!-- LISTE DES MATCHS (ARBRE) -->
+            <div id="matchs-container" class="p-4 bg-gray-50/50">
                 <p class="text-center text-gray-400 animate-pulse">Recherche des matchs...</p>
             </div>
             
@@ -90,14 +80,14 @@
     </nav>
 
     <script>
-        // 🚨 TON LIEN CSV DES PHASES FINALES ICI 🚨
-        const lienGoogleSheetFinales = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkfcixZivZwH0COYSFMlB9EnLI6D0vdbGgL3nA0jXhuWe-hOd8kdBX_iSx6cjwKIMXSebeRdq7pURT/pub?output=csv';
+        // 🚨 TON LIEN CSV DES PHASES FINALES (Même format que ton tableau précédent)
+        const lienGoogleSheetFinales = 'TON_LIEN_CSV_ICI';
 
         let tousLesMatchs = [];
-        let phasesDuSportActuel = [];
+        let phasesDisponibles = [];
         let indexPhaseActuelle = 0;
 
-        // Mise à jour de l'ordre pour inclure les 16e et 8e
+        // Ordre officiel des phases
         const motsClefsOrdre = ["16e", "8e", "huit", "quart", "demi", "petite", "3e", "final"];
 
         function getPoidsPhase(phaseStr) {
@@ -108,19 +98,6 @@
             return 99; 
         }
 
-        function traduireEmojiEnSport(texte) {
-            if (!texte) return "";
-            const t = texte.toLowerCase().trim();
-            if (t.includes("🏀") || t.includes("basket")) return "Basketball";
-            if (t.includes("🤾") || t.includes("hand")) return "Handball";
-            if (t.includes("⚽") || t.includes("foot")) return "Football";
-            if (t.includes("🥏") || t.includes("ulti")) return "Ultimate";
-            if (t.includes("🏐") || t.includes("volley")) return "Volleyball";
-            if (t.includes("🥎") || t.includes("🎳") || t.includes("🎯") || t.includes("petanq") || t.includes("pétanq")) return "Pétanque";
-            return t.charAt(0).toUpperCase() + t.slice(1);
-        }
-
-        // NOUVEAU PARSER CSV BLINDÉ (Protège contre les retours à la ligne dans les cases)
         function parserCSVSuperRobuste(texte) {
             let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
             let sep = texte.indexOf(';') > -1 && texte.indexOf(';') < texte.indexOf('\n') ? ';' : ',';
@@ -142,21 +119,17 @@
             try {
                 const reponse = await fetch(lienGoogleSheetFinales);
                 const donneesBrutes = await reponse.text();
-                
-                // Utilisation du nouveau parser
                 const lignes = parserCSVSuperRobuste(donneesBrutes);
                 
                 tousLesMatchs = []; 
-                let sportsDisponibles = new Set();
+                let setPhases = new Set();
 
                 for (let i = 1; i < lignes.length; i++) {
                     const colonnes = lignes[i];
                     
-                    if (colonnes.length >= 7 && colonnes[0] && colonnes[0].trim() !== "") { 
-                        const sportBrut = colonnes[0].trim();
+                    if (colonnes.length >= 7 && colonnes[1] && colonnes[1].trim() !== "") { 
                         const match = {
-                            sportClean: traduireEmojiEnSport(sportBrut),
-                            phase: colonnes[1] ? colonnes[1].trim() : "Phase Finale",
+                            phase: colonnes[1].trim(),
                             dateHeure: colonnes[2] ? colonnes[2].trim() : "",
                             eq1: colonnes[3] ? colonnes[3].trim() : "À définir", 
                             score1: colonnes[4] ? colonnes[4].trim() : "", 
@@ -166,40 +139,24 @@
                             arbitre: colonnes[8] ? colonnes[8].trim() : ""
                         };
                         tousLesMatchs.push(match);
-                        sportsDisponibles.add(match.sportClean);
+                        setPhases.add(match.phase);
                     }
                 }
 
-                const selectSport = document.getElementById('filtre-sport');
-                selectSport.innerHTML = ''; 
-                Array.from(sportsDisponibles).sort().forEach(sport => { 
-                    selectSport.innerHTML += `<option value="${sport}">${sport}</option>`; 
-                });
+                phasesDisponibles = Array.from(setPhases);
+                phasesDisponibles.sort((a, b) => getPoidsPhase(a) - getPoidsPhase(b));
 
-                if (tousLesMatchs.length > 0) {
-                    changerSport();
+                if (phasesDisponibles.length > 0) {
+                    indexPhaseActuelle = 0;
+                    afficherPhaseActuelle();
                 } else {
                     document.getElementById('matchs-container').innerHTML = '<p class="text-center text-gray-500 py-8">Aucun match trouvé. Vérifiez le lien CSV.</p>';
                 }
 
             } catch (erreur) {
                 console.error(erreur);
-                document.getElementById('matchs-container').innerHTML = '<p class="text-red-500 text-center font-bold">Erreur : Impossible de lire le fichier des phases finales.</p>';
+                document.getElementById('matchs-container').innerHTML = '<p class="text-red-500 text-center font-bold">Erreur de lecture du fichier.</p>';
             }
-        }
-
-        function changerSport() {
-            const selectSport = document.getElementById('filtre-sport');
-            if (!selectSport || selectSport.options.length === 0) return;
-            
-            const sportChoisi = selectSport.value;
-            
-            const matchsDuSport = tousLesMatchs.filter(m => m.sportClean === sportChoisi);
-            phasesDuSportActuel = [...new Set(matchsDuSport.map(m => m.phase))];
-            phasesDuSportActuel.sort((a, b) => getPoidsPhase(a) - getPoidsPhase(b));
-
-            indexPhaseActuelle = 0; 
-            afficherPhaseActuelle();
         }
 
         function phasePrecedente() {
@@ -210,10 +167,51 @@
         }
 
         function phaseSuivante() {
-            if (indexPhaseActuelle < phasesDuSportActuel.length - 1) {
+            if (indexPhaseActuelle < phasesDisponibles.length - 1) {
                 indexPhaseActuelle++;
                 afficherPhaseActuelle();
             }
+        }
+
+        function creerCarteMatch(match) {
+            const s1 = match.score1.trim() !== "" ? match.score1 : "-";
+            const s2 = match.score2.trim() !== "" ? match.score2 : "";
+            
+            // On compile les scores (si tout est dans score1, on n'affiche que lui, sinon on empile)
+            let blocScore = `<div class="font-bold text-gray-700 text-[11px] whitespace-pre-line leading-tight text-right w-full">${s1}</div>`;
+            if (s2 !== "" && s2 !== "-") {
+                blocScore += `<div class="font-bold text-gray-700 text-[11px] whitespace-pre-line leading-tight text-right w-full mt-1 border-t border-gray-200/50 pt-1">${s2}</div>`;
+            }
+
+            const infosSupp = [match.dateHeure, match.lieu].filter(Boolean).join(" • ");
+
+            return `
+                <div class="bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between min-h-[5.5rem] flex-1">
+                    <div class="flex w-full">
+                        <!-- Colonne Équipes -->
+                        <div class="flex flex-col justify-center space-y-2 border-r border-gray-100 pr-2 w-1/2 flex-shrink-0">
+                            <div class="flex items-center space-x-2 truncate">
+                                <div class="w-1.5 h-3.5 bg-or rounded-sm flex-shrink-0"></div>
+                                <span class="font-bold text-gray-800 text-xs md:text-sm truncate">${match.eq1}</span>
+                            </div>
+                            <div class="flex items-center space-x-2 truncate">
+                                <div class="w-1.5 h-3.5 bg-bleu-nuit rounded-sm flex-shrink-0"></div>
+                                <span class="font-bold text-gray-800 text-xs md:text-sm truncate">${match.eq2}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Colonne Scores (Accepte les retours à la ligne) -->
+                        <div class="flex flex-col justify-center items-end pl-2 w-1/2">
+                            ${blocScore}
+                        </div>
+                    </div>
+                    
+                    <!-- Ligne Date -->
+                    <div class="text-[9px] text-gray-400 mt-2 pt-1 border-t border-gray-100 text-right uppercase tracking-wider font-semibold">
+                        ${infosSupp}
+                    </div>
+                </div>
+            `;
         }
 
         function afficherPhaseActuelle() {
@@ -221,76 +219,61 @@
             const titre = document.getElementById('titre-phase');
             const btnPrev = document.getElementById('btn-prev');
             const btnNext = document.getElementById('btn-next');
-            const sportChoisi = document.getElementById('filtre-sport').value;
 
-            if (phasesDuSportActuel.length === 0) {
-                titre.innerText = "Aucun match";
-                container.innerHTML = '<p class="text-center text-gray-500 py-8">L\'arbre n\'est pas encore défini pour ce sport.</p>';
-                return;
-            }
+            if (phasesDisponibles.length === 0) return;
 
-            const nomPhase = phasesDuSportActuel[indexPhaseActuelle];
+            const nomPhase = phasesDisponibles[indexPhaseActuelle];
             titre.innerText = nomPhase;
 
             btnPrev.className = indexPhaseActuelle === 0 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline cursor-pointer";
-            btnNext.className = indexPhaseActuelle === phasesDuSportActuel.length - 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline cursor-pointer";
+            btnNext.className = indexPhaseActuelle === phasesDisponibles.length - 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline cursor-pointer";
 
-            const matchsDeLaPhase = tousLesMatchs.filter(m => m.sportClean === sportChoisi && m.phase === nomPhase);
-            container.innerHTML = '';
+            const matchsDeLaPhase = tousLesMatchs.filter(m => m.phase === nomPhase);
+            let html = '';
 
-            matchsDeLaPhase.forEach(match => {
-                // Analyse intelligente des scores (même si c'est du texte long)
-                const s1 = parseInt(match.score1);
-                const s2 = parseInt(match.score2);
-                
-                let eq1Bold = "font-bold text-gray-800";
-                let eq2Bold = "font-bold text-gray-800";
-                let eq1ScoreBold = "font-bold text-gray-800";
-                let eq2ScoreBold = "font-bold text-gray-800";
-                
-                let eq1Carre = "bg-or";
-                let eq2Carre = "bg-bleu-nuit";
+            // Regrouper les matchs par paire pour dessiner l'arbre
+            for (let i = 0; i < matchsDeLaPhase.length; i += 2) {
+                const m1 = matchsDeLaPhase[i];
+                const m2 = matchsDeLaPhase[i+1];
 
-                if (!isNaN(s1) && !isNaN(s2)) {
-                    if (s1 > s2) {
-                        eq2Bold = "text-gray-500 font-medium"; eq2ScoreBold = "text-gray-500 font-medium"; eq2Carre = "bg-gray-300";
-                    } else if (s2 > s1) {
-                        eq1Bold = "text-gray-500 font-medium"; eq1ScoreBold = "text-gray-500 font-medium"; eq1Carre = "bg-gray-300";
-                    }
-                }
-
-                const affScore1 = match.score1 !== "" ? match.score1 : "-";
-                const affScore2 = match.score2 !== "" ? match.score2 : "-";
-
-                const infosSupp = [match.dateHeure, match.lieu, match.arbitre ? `Arbitre: ${match.arbitre}` : ""].filter(Boolean).join(" • ");
-
-                // Modifications ici pour accueillir du texte long dans les scores
-                const carteHTML = `
-                    <div class="bg-gray-100 p-3 rounded-lg relative border border-gray-200/60 shadow-sm flex flex-col justify-center min-h-[90px]">
-                        
-                        <div class="flex items-center justify-between mb-2 gap-2">
-                            <div class="flex items-center space-x-2 truncate pr-2">
-                                <div class="w-1.5 h-4 ${eq1Carre} rounded-sm flex-shrink-0"></div>
-                                <span class="${eq1Bold} text-sm md:text-base truncate">${match.eq1}</span>
-                            </div>
-                            <div class="${eq1ScoreBold} text-xs md:text-sm font-medium flex-shrink-0 text-right whitespace-pre-line max-w-[120px]">${affScore1}</div>
+                if (m2) {
+                    // C'est une paire : On affiche 2 matchs avec les lignes de Bracket
+                    html += `
+                    <div class="flex mb-8 w-full">
+                        <!-- Gauche : Les 2 matchs -->
+                        <div class="w-5/12 flex flex-col justify-between space-y-4 relative z-10">
+                            ${creerCarteMatch(m1)}
+                            ${creerCarteMatch(m2)}
                         </div>
                         
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center space-x-2 truncate pr-2">
-                                <div class="w-1.5 h-4 ${eq2Carre} rounded-sm flex-shrink-0"></div>
-                                <span class="${eq2Bold} text-sm md:text-base truncate">${match.eq2}</span>
-                            </div>
-                            <div class="${eq2ScoreBold} text-xs md:text-sm font-medium flex-shrink-0 text-right whitespace-pre-line max-w-[120px]">${affScore2}</div>
+                        <!-- Milieu : Les Lignes -->
+                        <div class="w-2/12 relative flex-shrink-0">
+                            <div class="absolute top-[25%] bottom-[25%] left-0 w-1/2 border-t-2 border-b-2 border-r-2 border-gray-300 rounded-r-lg"></div>
+                            <div class="absolute top-[50%] left-[50%] right-0 border-t-2 border-gray-300"></div>
                         </div>
-
-                        <div class="text-[10px] text-gray-400 mt-2.5 pt-1.5 border-t border-gray-200/80 text-right uppercase tracking-wider font-semibold">
-                            ${infosSupp}
+                        
+                        <!-- Droite : La case du tour suivant -->
+                        <div class="w-5/12 flex flex-col justify-center pl-1">
+                            <div class="bg-gray-200/50 border border-gray-200/80 p-2 rounded-lg text-center flex flex-col justify-center items-center min-h-[4rem] shadow-inner">
+                                <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Tour suivant</span>
+                                <span class="text-gray-400 font-bold mt-1">-</span>
+                            </div>
                         </div>
                     </div>
-                `;
-                container.innerHTML += carteHTML;
-            });
+                    `;
+                } else {
+                    // Match unique (Ex: La Finale, ou un nombre impair)
+                    html += `
+                    <div class="flex justify-center mb-8 w-full">
+                        <div class="w-10/12 md:w-2/3">
+                            ${creerCarteMatch(m1)}
+                        </div>
+                    </div>
+                    `;
+                }
+            }
+
+            container.innerHTML = html;
         }
 
         chargerMatchs();

@@ -22,6 +22,7 @@
 </head>
 <body class="bg-gray-50 text-gray-800 pb-32 md:pb-0 font-sans">
 
+    <!-- HEADER -->
     <header class="bg-gradient-to-r from-bleu-nuit to-indigo-900 text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md">
         <img src="logo intra.png" alt="Logo Intras" class="w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20">
         <div class="text-center">
@@ -38,47 +39,76 @@
         <img src="logo_mads.png" alt="Logo Mads" class="md:hidden w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20">
     </header>
 
-    <main class="p-4 mt-4 space-y-6 max-w-4xl mx-auto">
+    <main class="p-4 mt-4 space-y-4 max-w-4xl mx-auto">
         
-        <!-- 🔥 LE NOUVEAU SYSTÈME D'ONGLETS 🔥 -->
-        <div class="flex justify-center mb-2">
+        <!-- ONGLETS POULES / FINALES -->
+        <div class="flex justify-center mb-4">
             <div class="bg-gray-200 rounded-xl p-1 inline-flex w-full max-w-sm shadow-inner">
                 <a href="classements.html" class="flex-1 text-center py-2 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">📊 Poules</a>
                 <a href="phases-finales.html" class="flex-1 text-center py-2 rounded-lg text-sm font-bold bg-white text-bleu-nuit shadow-sm transition-all pointer-events-none">🔥 Finales</a>
             </div>
         </div>
 
-        <section class="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <!-- SÉLECTION DU SPORT -->
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                <h2 class="font-bold text-xl text-bleu-nuit flex items-center gap-2">
-                    L'ARBRE FINAL
+                <h2 class="font-bold text-xl text-bleu-nuit flex items-center gap-2 uppercase tracking-wide">
+                    Tableau Final
                 </h2>
-                <select id="filtre-sport" onchange="filtrerMatchs()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-or focus:border-or block w-full md:w-auto p-2.5">
-                    <option value="Toutes" selected>Tous les sports</option>
+                <select id="filtre-sport" onchange="changerSport()" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm font-bold rounded-lg focus:ring-or focus:border-or block w-full md:w-auto p-2.5">
+                    <!-- Options injectées en JS -->
                 </select>
             </div>
         </section>
 
-        <section id="matchs-container" class="space-y-6">
-            <p class="text-center text-gray-400 animate-pulse">Chargement des phases finales...</p>
+        <!-- ZONE D'AFFICHAGE DU TABLEAU (Style L'Équipe) -->
+        <section class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            
+            <!-- EN-TÊTE DU TOUR (Navigation) -->
+            <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
+                <h3 id="titre-phase" class="font-bold text-gray-800 text-lg">Chargement...</h3>
+                <div class="text-xs text-blue-600 font-semibold space-x-2 flex">
+                    <button id="btn-prev" onclick="phasePrecedente()" class="hover:underline opacity-50 cursor-not-allowed">tour préc.</button>
+                    <span class="text-gray-300">|</span>
+                    <button id="btn-next" onclick="phaseSuivante()" class="hover:underline opacity-50 cursor-not-allowed">tour suiv.</button>
+                </div>
+            </div>
+
+            <!-- LISTE DES MATCHS -->
+            <div id="matchs-container" class="p-4 space-y-4">
+                <p class="text-center text-gray-400 animate-pulse">Recherche des matchs...</p>
+            </div>
+            
         </section>
     </main>
 
-    <!-- BARRE DE NAVIGATION MOBILE (5 ICÔNES) -->
+    <!-- BARRE DE NAVIGATION MOBILE -->
     <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
         <a href="index.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏠</span><span class="text-[10px] mt-1">ACCUEIL</span></a>
         <a href="planning.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">📅</span><span class="text-[10px] mt-1">PLANNING</span></a>
         <a href="equipes.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">👥</span><span class="text-[10px] mt-1">ÉQUIPES</span></a>
         <a href="staff.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🦺</span><span class="text-[10px] mt-1">STAFF</span></a>
-        <!-- LE LIEN SCORES POINTE MAINTENANT VERS PHASES-FINALES -->
         <a href="phases-finales.html" class="flex flex-col items-center text-or"><span class="text-xl">🏆</span><span class="text-[10px] font-bold mt-1 uppercase">SCORES</span></a>    
     </nav>
 
     <script>
-        // 🚨 METS LE LIEN DE TON NOUVEAU SHEET (CSV) DES PHASES FINALES ICI 🚨
-        const lienGoogleSheetFinales = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkfcixZivZwH0COYSFMlB9EnLI6D0vdbGgL3nA0jXhuWe-hOd8kdBX_iSx6cjwKIMXSebeRdq7pURT/pubhtml';
+        // 🚨 TON LIEN CSV DES PHASES FINALES (Avec au moins les colonnes : Sport, Phase, DateHeure, Eq1, Score1, Score2, Eq2, Lieu, Arbitre)
+        const lienGoogleSheetFinales = '';
 
         let tousLesMatchs = [];
+        let phasesDuSportActuel = [];
+        let indexPhaseActuelle = 0;
+
+        // Ordre logique pour trier les phases automatiquement
+        const motsClefsOrdre = ["huit", "quart", "demi", "petite", "3e", "final"];
+
+        function getPoidsPhase(phaseStr) {
+            const p = phaseStr.toLowerCase();
+            for(let i = 0; i < motsClefsOrdre.length; i++) {
+                if (p.includes(motsClefsOrdre[i])) returhttps://docs.google.com/spreadsheets/d/e/2PACX-1vRkfcixZivZwH0COYSFMlB9EnLI6D0vdbGgL3nA0jXhuWe-hOd8kdBX_iSx6cjwKIMXSebeRdq7pURT/pubhtmln i;
+            }
+            return 99; // Si on ne reconnaît pas le mot, on le met à la fin
+        }
 
         function traduireEmojiEnSport(texte) {
             if (!texte) return "";
@@ -92,8 +122,6 @@
         }
 
         async function chargerMatchs() {
-            const container = document.getElementById('matchs-container');
-            
             try {
                 const reponse = await fetch(lienGoogleSheetFinales);
                 const donneesBrutes = await reponse.text();
@@ -104,11 +132,10 @@
 
                 for (let i = 1; i < lignes.length; i++) {
                     const colonnes = lignes[i].split(',');
-
-                    if (colonnes.length >= 8 && colonnes[0].trim() !== "") { 
+                    // Vérification sur 7 colonnes minimum, on adapte si Lieu et Arbitre manquent
+                    if (colonnes.length >= 7 && colonnes[0].trim() !== "") { 
                         const sportBrut = colonnes[0].trim();
                         const match = {
-                            sport: sportBrut,
                             sportClean: traduireEmojiEnSport(sportBrut),
                             phase: colonnes[1] ? colonnes[1].trim() : "Phase Finale",
                             dateHeure: colonnes[2] ? colonnes[2].trim() : "",
@@ -124,76 +151,129 @@
                     }
                 }
 
+                // Remplir le menu déroulant des sports
                 const selectSport = document.getElementById('filtre-sport');
                 Array.from(sportsDisponibles).sort().forEach(sport => { 
                     selectSport.innerHTML += `<option value="${sport}">${sport}</option>`; 
                 });
 
-                afficherMatchs(tousLesMatchs);
+                changerSport();
 
             } catch (erreur) {
-                container.innerHTML = '<p class="text-red-500 text-center font-bold">En attente du calendrier des phases finales.</p>';
+                document.getElementById('matchs-container').innerHTML = '<p class="text-red-500 text-center font-bold">Le fichier des phases finales est introuvable.</p>';
             }
         }
 
-        function afficherMatchs(listeDeMatchs) {
-            const container = document.getElementById('matchs-container');
-            container.innerHTML = ''; 
+        function changerSport() {
+            const sportChoisi = document.getElementById('filtre-sport').value;
+            
+            // Extraire tous les matchs du sport sélectionné
+            const matchsDuSport = tousLesMatchs.filter(m => m.sportClean === sportChoisi);
+            
+            // Trouver toutes les phases uniques pour ce sport
+            phasesDuSportActuel = [...new Set(matchsDuSport.map(m => m.phase))];
+            
+            // Trier les phases dans le bon ordre (Quart -> Demi -> Finale)
+            phasesDuSportActuel.sort((a, b) => getPoidsPhase(a) - getPoidsPhase(b));
 
-            if (listeDeMatchs.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-500 py-8">Aucun match trouvé pour ce sport.</p>';
+            // On se met sur la première phase par défaut (ex: Quarts de finale)
+            indexPhaseActuelle = 0; 
+            afficherPhaseActuelle();
+        }
+
+        function phasePrecedente() {
+            if (indexPhaseActuelle > 0) {
+                indexPhaseActuelle--;
+                afficherPhaseActuelle();
+            }
+        }
+
+        function phaseSuivante() {
+            if (indexPhaseActuelle < phasesDuSportActuel.length - 1) {
+                indexPhaseActuelle++;
+                afficherPhaseActuelle();
+            }
+        }
+
+        function afficherPhaseActuelle() {
+            const container = document.getElementById('matchs-container');
+            const titre = document.getElementById('titre-phase');
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+            const sportChoisi = document.getElementById('filtre-sport').value;
+
+            if (phasesDuSportActuel.length === 0) {
+                titre.innerText = "Aucun match";
+                container.innerHTML = '<p class="text-center text-gray-500 py-8">L\'arbre n\'est pas encore défini pour ce sport.</p>';
                 return;
             }
 
-            listeDeMatchs.forEach(match => {
-                let blocScore = `<span class="text-gray-300 font-bold mx-3">VS</span>`;
-                if (match.score1 !== "" && match.score2 !== "") {
-                    blocScore = `
-                        <div class="bg-bleu-nuit text-white px-3 py-1 rounded-lg font-bold text-lg mx-3 shadow-inner">
-                            ${match.score1} - ${match.score2}
-                        </div>
-                    `;
+            const nomPhase = phasesDuSportActuel[indexPhaseActuelle];
+            titre.innerText = nomPhase;
+
+            // Gérer l'apparence des boutons Précédent/Suivant
+            btnPrev.className = indexPhaseActuelle === 0 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline cursor-pointer";
+            btnNext.className = indexPhaseActuelle === phasesDuSportActuel.length - 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline cursor-pointer";
+
+            // Récupérer les matchs de cette phase
+            const matchsDeLaPhase = tousLesMatchs.filter(m => m.sportClean === sportChoisi && m.phase === nomPhase);
+            container.innerHTML = '';
+
+            matchsDeLaPhase.forEach(match => {
+                // Déterminer qui a gagné pour mettre en gras (Design L'Équipe)
+                const s1 = parseInt(match.score1);
+                const s2 = parseInt(match.score2);
+                let eq1Bold = "font-bold text-gray-800";
+                let eq2Bold = "font-bold text-gray-800";
+                let eq1ScoreBold = "font-bold text-gray-800";
+                let eq2ScoreBold = "font-bold text-gray-800";
+                
+                // Opacité du petit carré couleur à gauche
+                let eq1Carre = "bg-or";
+                let eq2Carre = "bg-bleu-nuit";
+
+                if (!isNaN(s1) && !isNaN(s2)) {
+                    if (s1 > s2) {
+                        eq2Bold = "text-gray-500"; eq2ScoreBold = "text-gray-500"; eq2Carre = "bg-gray-300";
+                    } else if (s2 > s1) {
+                        eq1Bold = "text-gray-500"; eq1ScoreBold = "text-gray-500"; eq1Carre = "bg-gray-300";
+                    }
                 }
 
-                let couleurPhase = "bg-gray-100 text-gray-700";
-                if (match.phase.toLowerCase().includes("final")) couleurPhase = "bg-or text-white";
-                if (match.phase.toLowerCase().includes("demi")) couleurPhase = "bg-bleu-nuit text-white";
+                // Gérer les scores vides
+                const affScore1 = match.score1 !== "" ? match.score1 : "-";
+                const affScore2 = match.score2 !== "" ? match.score2 : "-";
 
-                const affichageArbitre = match.arbitre ? `<span>Arbitre : <span class="font-bold text-gray-700">${match.arbitre}</span></span>` : '';
+                const infosSupp = [match.dateHeure, match.lieu, match.arbitre ? `Arbitre: ${match.arbitre}` : ""].filter(Boolean).join(" • ");
 
                 const carteHTML = `
-                    <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative">
-                        <div class="${couleurPhase} px-4 py-2 flex justify-between items-center">
-                            <span class="font-bold uppercase tracking-wider text-sm">${match.phase} - ${match.sport}</span>
-                            <span class="text-xs font-bold opacity-90">${match.dateHeure}</span>
+                    <div class="bg-gray-100 p-3 rounded-lg relative border border-gray-200/60 shadow-sm flex flex-col justify-center min-h-[90px]">
+                        <!-- Équipe 1 -->
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-2 truncate pr-2">
+                                <div class="w-1.5 h-4 ${eq1Carre} rounded-sm flex-shrink-0"></div>
+                                <span class="${eq1Bold} text-sm md:text-base truncate">${match.eq1}</span>
+                            </div>
+                            <div class="${eq1ScoreBold} text-sm md:text-base flex-shrink-0 ml-2 w-6 text-right">${affScore1}</div>
                         </div>
-                        <div class="p-5 flex items-center justify-between">
-                            <div class="flex-1 text-right min-w-0">
-                                <p class="font-bold text-gray-800 md:text-lg text-sm truncate">${match.eq1}</p>
+                        
+                        <!-- Équipe 2 -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2 truncate pr-2">
+                                <div class="w-1.5 h-4 ${eq2Carre} rounded-sm flex-shrink-0"></div>
+                                <span class="${eq2Bold} text-sm md:text-base truncate">${match.eq2}</span>
                             </div>
-                            <div class="flex-shrink-0 flex justify-center">
-                                ${blocScore}
-                            </div>
-                            <div class="flex-1 text-left min-w-0">
-                                <p class="font-bold text-gray-800 md:text-lg text-sm truncate">${match.eq2}</p>
-                            </div>
+                            <div class="${eq2ScoreBold} text-sm md:text-base flex-shrink-0 ml-2 w-6 text-right">${affScore2}</div>
                         </div>
-                        <div class="bg-gray-50 px-4 py-2 text-xs text-gray-500 flex justify-center gap-x-6 gap-y-1 flex-wrap border-t border-gray-100">
-                            <span>📍 ${match.lieu}</span>
-                            ${affichageArbitre}
+
+                        <!-- Infos date/lieu en bas à droite -->
+                        <div class="text-[10px] text-gray-400 mt-2.5 pt-1.5 border-t border-gray-200/80 text-right uppercase tracking-wider font-semibold">
+                            ${infosSupp}
                         </div>
                     </div>
                 `;
                 container.innerHTML += carteHTML;
             });
-        }
-
-        function filtrerMatchs() {
-            const sportChoisi = document.getElementById('filtre-sport').value;
-            const matchsFiltres = tousLesMatchs.filter(match => {
-                return (sportChoisi === 'Toutes') || (match.sportClean === sportChoisi);
-            });
-            afficherMatchs(matchsFiltres);
         }
 
         chargerMatchs();

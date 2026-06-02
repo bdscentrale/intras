@@ -61,10 +61,9 @@
             </div>
         </section>
 
-        <!-- ZONE D'AFFICHAGE DU TABLEAU (Style L'Équipe) -->
+        <!-- ZONE D'AFFICHAGE DU TABLEAU -->
         <section class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             
-            <!-- EN-TÊTE DU TOUR (Navigation) -->
             <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
                 <h3 id="titre-phase" class="font-bold text-gray-800 text-lg">Chargement...</h3>
                 <div class="text-xs text-blue-600 font-semibold space-x-2 flex">
@@ -74,7 +73,6 @@
                 </div>
             </div>
 
-            <!-- LISTE DES MATCHS -->
             <div id="matchs-container" class="p-4 space-y-4">
                 <p class="text-center text-gray-400 animate-pulse">Recherche des matchs...</p>
             </div>
@@ -92,48 +90,69 @@
     </nav>
 
     <script>
-        // 🚨 TON LIEN CSV DES PHASES FINALES (Avec au moins les colonnes : Sport, Phase, DateHeure, Eq1, Score1, Score2, Eq2, Lieu, Arbitre)
-        const lienGoogleSheetFinales = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkfcixZivZwH0COYSFMlB9EnLI6D0vdbGgL3nA0jXhuWe-hOd8kdBX_iSx6cjwKIMXSebeRdq7pURT/pubhtml';
+        // 🚨 TON LIEN CSV DES PHASES FINALES ICI 🚨
+        const lienGoogleSheetFinales = 'TON_LIEN_CSV_ICI';
 
         let tousLesMatchs = [];
         let phasesDuSportActuel = [];
         let indexPhaseActuelle = 0;
 
-        // Ordre logique pour trier les phases automatiquement
-        const motsClefsOrdre = ["huit", "quart", "demi", "petite", "3e", "final"];
+        // Mise à jour de l'ordre pour inclure les 16e et 8e
+        const motsClefsOrdre = ["16e", "8e", "huit", "quart", "demi", "petite", "3e", "final"];
 
         function getPoidsPhase(phaseStr) {
             const p = phaseStr.toLowerCase();
             for(let i = 0; i < motsClefsOrdre.length; i++) {
-                if (p.includes(motsClefsOrdre[i])) returhttps://docs.google.com/spreadsheets/d/e/2PACX-1vRkfcixZivZwH0COYSFMlB9EnLI6D0vdbGgL3nA0jXhuWe-hOd8kdBX_iSx6cjwKIMXSebeRdq7pURT/pubhtmln i;
+                if (p.includes(motsClefsOrdre[i])) return i;
             }
-            return 99; // Si on ne reconnaît pas le mot, on le met à la fin
+            return 99; 
         }
 
         function traduireEmojiEnSport(texte) {
             if (!texte) return "";
-            if (texte.includes("🏀")) return "Basketball";
-            if (texte.includes("🤾")) return "Handball";
-            if (texte.includes("⚽")) return "Football";
-            if (texte.includes("🥏")) return "Ultimate";
-            if (texte.includes("🏐")) return "Volleyball";
-            if (texte.includes("🥎") || texte.includes("☀️") || texte.includes("🎯")) return "Pétanque";
-            return texte.trim();
+            const t = texte.toLowerCase().trim();
+            if (t.includes("🏀") || t.includes("basket")) return "Basketball";
+            if (t.includes("🤾") || t.includes("hand")) return "Handball";
+            if (t.includes("⚽") || t.includes("foot")) return "Football";
+            if (t.includes("🥏") || t.includes("ulti")) return "Ultimate";
+            if (t.includes("🏐") || t.includes("volley")) return "Volleyball";
+            if (t.includes("🥎") || t.includes("🎳") || t.includes("🎯") || t.includes("petanq") || t.includes("pétanq")) return "Pétanque";
+            return t.charAt(0).toUpperCase() + t.slice(1);
+        }
+
+        // NOUVEAU PARSER CSV BLINDÉ (Protège contre les retours à la ligne dans les cases)
+        function parserCSVSuperRobuste(texte) {
+            let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
+            let sep = texte.indexOf(';') > -1 && texte.indexOf(';') < texte.indexOf('\n') ? ';' : ',';
+            for (l of texte) {
+                if ('"' === l) {
+                    if (s && l === p) row[i] += l;
+                    s = !s;
+                } else if (sep === l && s) l = row[++i] = '';
+                else if ('\n' === l && s) {
+                    if ('\r' === p) row[i] = row[i].slice(0, -1);
+                    row = ret[++r] = [l = '']; i = 0;
+                } else row[i] += l;
+                p = l;
+            }
+            return ret;
         }
 
         async function chargerMatchs() {
             try {
                 const reponse = await fetch(lienGoogleSheetFinales);
                 const donneesBrutes = await reponse.text();
-                const lignes = donneesBrutes.split('\n');
+                
+                // Utilisation du nouveau parser
+                const lignes = parserCSVSuperRobuste(donneesBrutes);
                 
                 tousLesMatchs = []; 
                 let sportsDisponibles = new Set();
 
                 for (let i = 1; i < lignes.length; i++) {
-                    const colonnes = lignes[i].split(',');
-                    // Vérification sur 7 colonnes minimum, on adapte si Lieu et Arbitre manquent
-                    if (colonnes.length >= 7 && colonnes[0].trim() !== "") { 
+                    const colonnes = lignes[i];
+                    
+                    if (colonnes.length >= 7 && colonnes[0] && colonnes[0].trim() !== "") { 
                         const sportBrut = colonnes[0].trim();
                         const match = {
                             sportClean: traduireEmojiEnSport(sportBrut),
@@ -151,32 +170,34 @@
                     }
                 }
 
-                // Remplir le menu déroulant des sports
                 const selectSport = document.getElementById('filtre-sport');
+                selectSport.innerHTML = ''; 
                 Array.from(sportsDisponibles).sort().forEach(sport => { 
                     selectSport.innerHTML += `<option value="${sport}">${sport}</option>`; 
                 });
 
-                changerSport();
+                if (tousLesMatchs.length > 0) {
+                    changerSport();
+                } else {
+                    document.getElementById('matchs-container').innerHTML = '<p class="text-center text-gray-500 py-8">Aucun match trouvé. Vérifiez le lien CSV.</p>';
+                }
 
             } catch (erreur) {
-                document.getElementById('matchs-container').innerHTML = '<p class="text-red-500 text-center font-bold">Le fichier des phases finales est introuvable.</p>';
+                console.error(erreur);
+                document.getElementById('matchs-container').innerHTML = '<p class="text-red-500 text-center font-bold">Erreur : Impossible de lire le fichier des phases finales.</p>';
             }
         }
 
         function changerSport() {
-            const sportChoisi = document.getElementById('filtre-sport').value;
+            const selectSport = document.getElementById('filtre-sport');
+            if (!selectSport || selectSport.options.length === 0) return;
             
-            // Extraire tous les matchs du sport sélectionné
+            const sportChoisi = selectSport.value;
+            
             const matchsDuSport = tousLesMatchs.filter(m => m.sportClean === sportChoisi);
-            
-            // Trouver toutes les phases uniques pour ce sport
             phasesDuSportActuel = [...new Set(matchsDuSport.map(m => m.phase))];
-            
-            // Trier les phases dans le bon ordre (Quart -> Demi -> Finale)
             phasesDuSportActuel.sort((a, b) => getPoidsPhase(a) - getPoidsPhase(b));
 
-            // On se met sur la première phase par défaut (ex: Quarts de finale)
             indexPhaseActuelle = 0; 
             afficherPhaseActuelle();
         }
@@ -211,62 +232,58 @@
             const nomPhase = phasesDuSportActuel[indexPhaseActuelle];
             titre.innerText = nomPhase;
 
-            // Gérer l'apparence des boutons Précédent/Suivant
             btnPrev.className = indexPhaseActuelle === 0 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline cursor-pointer";
             btnNext.className = indexPhaseActuelle === phasesDuSportActuel.length - 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline cursor-pointer";
 
-            // Récupérer les matchs de cette phase
             const matchsDeLaPhase = tousLesMatchs.filter(m => m.sportClean === sportChoisi && m.phase === nomPhase);
             container.innerHTML = '';
 
             matchsDeLaPhase.forEach(match => {
-                // Déterminer qui a gagné pour mettre en gras (Design L'Équipe)
+                // Analyse intelligente des scores (même si c'est du texte long)
                 const s1 = parseInt(match.score1);
                 const s2 = parseInt(match.score2);
+                
                 let eq1Bold = "font-bold text-gray-800";
                 let eq2Bold = "font-bold text-gray-800";
                 let eq1ScoreBold = "font-bold text-gray-800";
                 let eq2ScoreBold = "font-bold text-gray-800";
                 
-                // Opacité du petit carré couleur à gauche
                 let eq1Carre = "bg-or";
                 let eq2Carre = "bg-bleu-nuit";
 
                 if (!isNaN(s1) && !isNaN(s2)) {
                     if (s1 > s2) {
-                        eq2Bold = "text-gray-500"; eq2ScoreBold = "text-gray-500"; eq2Carre = "bg-gray-300";
+                        eq2Bold = "text-gray-500 font-medium"; eq2ScoreBold = "text-gray-500 font-medium"; eq2Carre = "bg-gray-300";
                     } else if (s2 > s1) {
-                        eq1Bold = "text-gray-500"; eq1ScoreBold = "text-gray-500"; eq1Carre = "bg-gray-300";
+                        eq1Bold = "text-gray-500 font-medium"; eq1ScoreBold = "text-gray-500 font-medium"; eq1Carre = "bg-gray-300";
                     }
                 }
 
-                // Gérer les scores vides
                 const affScore1 = match.score1 !== "" ? match.score1 : "-";
                 const affScore2 = match.score2 !== "" ? match.score2 : "-";
 
                 const infosSupp = [match.dateHeure, match.lieu, match.arbitre ? `Arbitre: ${match.arbitre}` : ""].filter(Boolean).join(" • ");
 
+                // Modifications ici pour accueillir du texte long dans les scores
                 const carteHTML = `
                     <div class="bg-gray-100 p-3 rounded-lg relative border border-gray-200/60 shadow-sm flex flex-col justify-center min-h-[90px]">
-                        <!-- Équipe 1 -->
-                        <div class="flex items-center justify-between mb-2">
+                        
+                        <div class="flex items-center justify-between mb-2 gap-2">
                             <div class="flex items-center space-x-2 truncate pr-2">
                                 <div class="w-1.5 h-4 ${eq1Carre} rounded-sm flex-shrink-0"></div>
                                 <span class="${eq1Bold} text-sm md:text-base truncate">${match.eq1}</span>
                             </div>
-                            <div class="${eq1ScoreBold} text-sm md:text-base flex-shrink-0 ml-2 w-6 text-right">${affScore1}</div>
+                            <div class="${eq1ScoreBold} text-xs md:text-sm font-medium flex-shrink-0 text-right whitespace-pre-line max-w-[120px]">${affScore1}</div>
                         </div>
                         
-                        <!-- Équipe 2 -->
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between gap-2">
                             <div class="flex items-center space-x-2 truncate pr-2">
                                 <div class="w-1.5 h-4 ${eq2Carre} rounded-sm flex-shrink-0"></div>
                                 <span class="${eq2Bold} text-sm md:text-base truncate">${match.eq2}</span>
                             </div>
-                            <div class="${eq2ScoreBold} text-sm md:text-base flex-shrink-0 ml-2 w-6 text-right">${affScore2}</div>
+                            <div class="${eq2ScoreBold} text-xs md:text-sm font-medium flex-shrink-0 text-right whitespace-pre-line max-w-[120px]">${affScore2}</div>
                         </div>
 
-                        <!-- Infos date/lieu en bas à droite -->
                         <div class="text-[10px] text-gray-400 mt-2.5 pt-1.5 border-t border-gray-200/80 text-right uppercase tracking-wider font-semibold">
                             ${infosSupp}
                         </div>

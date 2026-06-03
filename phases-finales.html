@@ -177,37 +177,40 @@
             const s1 = match.score1.trim() !== "" ? match.score1 : "-";
             const s2 = match.score2.trim() !== "" ? match.score2 : "";
             
-            // On compile les scores (si tout est dans score1, on n'affiche que lui, sinon on empile)
-            let blocScore = `<div class="font-bold text-gray-700 text-[11px] whitespace-pre-line leading-tight text-right w-full">${s1}</div>`;
+            // On compile les scores (taille de texte légèrement réduite pour que ça respire)
+            let blocScore = `<div class="font-bold text-gray-700 text-[9px] sm:text-[10px] whitespace-pre-line leading-tight text-right">${s1}</div>`;
             if (s2 !== "" && s2 !== "-") {
-                blocScore += `<div class="font-bold text-gray-700 text-[11px] whitespace-pre-line leading-tight text-right w-full mt-1 border-t border-gray-200/50 pt-1">${s2}</div>`;
+                blocScore += `<div class="font-bold text-gray-700 text-[9px] sm:text-[10px] whitespace-pre-line leading-tight text-right mt-1 border-t border-gray-200/50 pt-1">${s2}</div>`;
             }
 
             const infosSupp = [match.dateHeure, match.lieu].filter(Boolean).join(" • ");
 
+            // MODIFICATIONS :
+            // flex-1 min-w-0 pour les équipes (prend tout l'espace restant)
+            // flex-shrink-0 pour le score (ne se fait pas écraser et prend juste sa taille)
             return `
-                <div class="bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between min-h-[5.5rem] flex-1">
-                    <div class="flex w-full">
+                <div class="bg-white p-2 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between min-h-[5.5rem] w-full">
+                    <div class="flex w-full gap-1">
                         <!-- Colonne Équipes -->
-                        <div class="flex flex-col justify-center space-y-2 border-r border-gray-100 pr-2 w-1/2 flex-shrink-0">
-                            <div class="flex items-center space-x-2 truncate">
-                                <div class="w-1.5 h-3.5 bg-or rounded-sm flex-shrink-0"></div>
-                                <span class="font-bold text-gray-800 text-xs md:text-sm truncate">${match.eq1}</span>
+                        <div class="flex flex-col justify-center space-y-2 border-r border-gray-100 pr-1 flex-1 min-w-0">
+                            <div class="flex items-start space-x-1.5">
+                                <div class="w-1.5 h-3.5 bg-or rounded-sm flex-shrink-0 mt-0.5"></div>
+                                <span class="font-bold text-gray-800 text-[10px] sm:text-xs leading-tight break-words">${match.eq1}</span>
                             </div>
-                            <div class="flex items-center space-x-2 truncate">
-                                <div class="w-1.5 h-3.5 bg-bleu-nuit rounded-sm flex-shrink-0"></div>
-                                <span class="font-bold text-gray-800 text-xs md:text-sm truncate">${match.eq2}</span>
+                            <div class="flex items-start space-x-1.5">
+                                <div class="w-1.5 h-3.5 bg-bleu-nuit rounded-sm flex-shrink-0 mt-0.5"></div>
+                                <span class="font-bold text-gray-800 text-[10px] sm:text-xs leading-tight break-words">${match.eq2}</span>
                             </div>
                         </div>
                         
-                        <!-- Colonne Scores (Accepte les retours à la ligne) -->
-                        <div class="flex flex-col justify-center items-end pl-2 w-1/2">
+                        <!-- Colonne Scores -->
+                        <div class="flex flex-col justify-center items-end pl-1 flex-shrink-0 max-w-[50%]">
                             ${blocScore}
                         </div>
                     </div>
                     
                     <!-- Ligne Date -->
-                    <div class="text-[9px] text-gray-400 mt-2 pt-1 border-t border-gray-100 text-right uppercase tracking-wider font-semibold">
+                    <div class="text-[8px] text-gray-400 mt-1.5 pt-1 border-t border-gray-100 text-right uppercase tracking-wider font-semibold">
                         ${infosSupp}
                     </div>
                 </div>

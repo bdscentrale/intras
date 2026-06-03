@@ -80,8 +80,8 @@
     </nav>
 
     <script>
-        // 🚨 TON LIEN CSV DES PHASES FINALES (Même format que ton tableau précédent)
-        const lienGoogleSheetFinales = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRkfcixZivZwH0COYSFMlB9EnLI6D0vdbGgL3nA0jXhuWe-hOd8kdBX_iSx6cjwKIMXSebeRdq7pURT/pub?output=csv';
+        // 🚨 TON LIEN CSV DES PHASES FINALES ICI 🚨
+        const lienGoogleSheetFinales = 'TON_LIEN_CSV_ICI';
 
         let tousLesMatchs = [];
         let phasesDisponibles = [];
@@ -129,6 +129,7 @@
                     
                     if (colonnes.length >= 7 && colonnes[1] && colonnes[1].trim() !== "") { 
                         const match = {
+                            detailsScores: colonnes[0] ? colonnes[0].trim() : "", // On utilise la colonne A pour les scores détaillés
                             phase: colonnes[1].trim(),
                             dateHeure: colonnes[2] ? colonnes[2].trim() : "",
                             eq1: colonnes[3] ? colonnes[3].trim() : "À définir", 
@@ -174,44 +175,70 @@
         }
 
         function creerCarteMatch(match) {
-            const s1 = match.score1.trim() !== "" ? match.score1 : "-";
-            const s2 = match.score2.trim() !== "" ? match.score2 : "";
+            const affScore1 = match.score1.trim() !== "" ? match.score1 : "-";
+            const affScore2 = match.score2.trim() !== "" ? match.score2 : "-";
             
-            // On compile les scores (taille de texte légèrement réduite pour que ça respire)
-            let blocScore = `<div class="font-bold text-gray-700 text-[9px] sm:text-[10px] whitespace-pre-line leading-tight text-right">${s1}</div>`;
-            if (s2 !== "" && s2 !== "-") {
-                blocScore += `<div class="font-bold text-gray-700 text-[9px] sm:text-[10px] whitespace-pre-line leading-tight text-right mt-1 border-t border-gray-200/50 pt-1">${s2}</div>`;
+            let eq1Bold = "text-gray-800";
+            let eq2Bold = "text-gray-800";
+            let s1Bold = "text-gray-800";
+            let s2Bold = "text-gray-800";
+            let eq1Color = "bg-or";
+            let eq2Color = "bg-bleu-nuit";
+
+            // Calcul du vainqueur pour le mettre en gras
+            const numS1 = parseInt(affScore1);
+            const numS2 = parseInt(affScore2);
+            if (!isNaN(numS1) && !isNaN(numS2)) {
+                if (numS1 > numS2) {
+                    eq1Bold = "font-bold text-gray-800"; s1Bold = "font-bold text-gray-800";
+                    eq2Bold = "font-medium text-gray-500"; s2Bold = "font-medium text-gray-500";
+                    eq2Color = "bg-gray-300";
+                } else if (numS2 > numS1) {
+                    eq2Bold = "font-bold text-gray-800"; s2Bold = "font-bold text-gray-800";
+                    eq1Bold = "font-medium text-gray-500"; s1Bold = "font-medium text-gray-500";
+                    eq1Color = "bg-gray-300";
+                }
+            } else {
+                eq1Bold = "font-bold text-gray-800"; eq2Bold = "font-bold text-gray-800";
+                s1Bold = "font-bold text-gray-800"; s2Bold = "font-bold text-gray-800";
             }
+
+            // Gestion de l'affichage des détails (si la colonne A est remplie)
+            const affichageDetails = match.detailsScores ? 
+                `<div class="text-[9px] text-gray-600 font-medium whitespace-pre-line leading-snug">${match.detailsScores}</div>` : '';
 
             const infosSupp = [match.dateHeure, match.lieu].filter(Boolean).join(" • ");
 
-            // MODIFICATIONS :
-            // flex-1 min-w-0 pour les équipes (prend tout l'espace restant)
-            // flex-shrink-0 pour le score (ne se fait pas écraser et prend juste sa taille)
             return `
-                <div class="bg-white p-2 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between min-h-[5.5rem] w-full">
-                    <div class="flex w-full gap-1">
-                        <!-- Colonne Équipes -->
-                        <div class="flex flex-col justify-center space-y-2 border-r border-gray-100 pr-1 flex-1 min-w-0">
-                            <div class="flex items-start space-x-1.5">
-                                <div class="w-1.5 h-3.5 bg-or rounded-sm flex-shrink-0 mt-0.5"></div>
-                                <span class="font-bold text-gray-800 text-[10px] sm:text-xs leading-tight break-words">${match.eq1}</span>
+                <div class="bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between min-h-[5.5rem] w-full">
+                    
+                    <!-- HAUT : Noms des équipes et Scores Globaux -->
+                    <div class="flex flex-col space-y-1.5 w-full">
+                        <div class="flex justify-between items-center w-full">
+                            <div class="flex items-start space-x-1.5 min-w-0 pr-2">
+                                <div class="w-1.5 h-3.5 ${eq1Color} rounded-sm flex-shrink-0 mt-0.5"></div>
+                                <span class="${eq1Bold} text-[10px] sm:text-xs leading-tight break-words">${match.eq1}</span>
                             </div>
-                            <div class="flex items-start space-x-1.5">
-                                <div class="w-1.5 h-3.5 bg-bleu-nuit rounded-sm flex-shrink-0 mt-0.5"></div>
-                                <span class="font-bold text-gray-800 text-[10px] sm:text-xs leading-tight break-words">${match.eq2}</span>
-                            </div>
+                            <div class="${s1Bold} text-[11px] sm:text-xs text-right w-6 flex-shrink-0">${affScore1}</div>
                         </div>
                         
-                        <!-- Colonne Scores -->
-                        <div class="flex flex-col justify-center items-end pl-1 flex-shrink-0 max-w-[50%]">
-                            ${blocScore}
+                        <div class="flex justify-between items-center w-full">
+                            <div class="flex items-start space-x-1.5 min-w-0 pr-2">
+                                <div class="w-1.5 h-3.5 ${eq2Color} rounded-sm flex-shrink-0 mt-0.5"></div>
+                                <span class="${eq2Bold} text-[10px] sm:text-xs leading-tight break-words">${match.eq2}</span>
+                            </div>
+                            <div class="${s2Bold} text-[11px] sm:text-xs text-right w-6 flex-shrink-0">${affScore2}</div>
                         </div>
                     </div>
                     
-                    <!-- Ligne Date -->
-                    <div class="text-[8px] text-gray-400 mt-1.5 pt-1 border-t border-gray-100 text-right uppercase tracking-wider font-semibold">
-                        ${infosSupp}
+                    <!-- BAS : Détails sports et Date -->
+                    <div class="mt-2.5 pt-1.5 border-t border-gray-100 flex justify-between items-end gap-2 w-full">
+                        <div class="flex-1 pr-2">
+                            ${affichageDetails}
+                        </div>
+                        <div class="text-[8px] text-gray-400 uppercase tracking-wider font-semibold text-right flex-shrink-0 pb-0.5">
+                            ${infosSupp}
+                        </div>
                     </div>
                 </div>
             `;
@@ -234,28 +261,23 @@
             const matchsDeLaPhase = tousLesMatchs.filter(m => m.phase === nomPhase);
             let html = '';
 
-            // Regrouper les matchs par paire pour dessiner l'arbre
             for (let i = 0; i < matchsDeLaPhase.length; i += 2) {
                 const m1 = matchsDeLaPhase[i];
                 const m2 = matchsDeLaPhase[i+1];
 
                 if (m2) {
-                    // C'est une paire : On affiche 2 matchs avec les lignes de Bracket
                     html += `
                     <div class="flex mb-8 w-full">
-                        <!-- Gauche : Les 2 matchs -->
-                        <div class="w-5/12 flex flex-col justify-between space-y-4 relative z-10">
+                        <div class="w-6/12 sm:w-5/12 flex flex-col justify-between space-y-4 relative z-10">
                             ${creerCarteMatch(m1)}
                             ${creerCarteMatch(m2)}
                         </div>
                         
-                        <!-- Milieu : Les Lignes -->
-                        <div class="w-2/12 relative flex-shrink-0">
+                        <div class="w-1/12 sm:w-2/12 relative flex-shrink-0">
                             <div class="absolute top-[25%] bottom-[25%] left-0 w-1/2 border-t-2 border-b-2 border-r-2 border-gray-300 rounded-r-lg"></div>
                             <div class="absolute top-[50%] left-[50%] right-0 border-t-2 border-gray-300"></div>
                         </div>
                         
-                        <!-- Droite : La case du tour suivant -->
                         <div class="w-5/12 flex flex-col justify-center pl-1">
                             <div class="bg-gray-200/50 border border-gray-200/80 p-2 rounded-lg text-center flex flex-col justify-center items-center min-h-[4rem] shadow-inner">
                                 <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Tour suivant</span>
@@ -265,7 +287,6 @@
                     </div>
                     `;
                 } else {
-                    // Match unique (Ex: La Finale, ou un nombre impair)
                     html += `
                     <div class="flex justify-center mb-8 w-full">
                         <div class="w-10/12 md:w-2/3">

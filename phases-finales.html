@@ -52,7 +52,6 @@
         <!-- ZONE D'AFFICHAGE DU TABLEAU (BRACKET) -->
         <section class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             
-            <!-- EN-TÊTE DU TOUR (Navigation) -->
             <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
                 <h3 id="titre-phase" class="font-bold text-gray-800 text-lg uppercase tracking-wide">Chargement...</h3>
                 <div class="text-xs text-blue-600 font-semibold space-x-2 flex">
@@ -62,7 +61,6 @@
                 </div>
             </div>
 
-            <!-- LISTE DES MATCHS (ARBRE) -->
             <div id="matchs-container" class="p-4 bg-gray-50/50">
                 <p class="text-center text-gray-400 animate-pulse">Recherche des matchs...</p>
             </div>
@@ -87,7 +85,6 @@
         let phasesDisponibles = [];
         let indexPhaseActuelle = 0;
 
-        // Ordre officiel des phases
         const motsClefsOrdre = ["16e", "8e", "huit", "quart", "demi", "petite", "3e", "final"];
 
         function getPoidsPhase(phaseStr) {
@@ -129,7 +126,7 @@
                     
                     if (colonnes.length >= 7 && colonnes[1] && colonnes[1].trim() !== "") { 
                         const match = {
-                            detailsScores: colonnes[0] ? colonnes[0].trim() : "", // On utilise la colonne A pour les scores détaillés
+                            detailsScores: colonnes[0] ? colonnes[0].trim() : "", 
                             phase: colonnes[1].trim(),
                             dateHeure: colonnes[2] ? colonnes[2].trim() : "",
                             eq1: colonnes[3] ? colonnes[3].trim() : "À définir", 
@@ -185,7 +182,7 @@
             let eq1Color = "bg-or";
             let eq2Color = "bg-bleu-nuit";
 
-            // Calcul du vainqueur pour le mettre en gras
+            // Calcul du vainqueur
             const numS1 = parseInt(affScore1);
             const numS2 = parseInt(affScore2);
             if (!isNaN(numS1) && !isNaN(numS2)) {
@@ -203,9 +200,19 @@
                 s1Bold = "font-bold text-gray-800"; s2Bold = "font-bold text-gray-800";
             }
 
-            // Gestion de l'affichage des détails (si la colonne A est remplie)
-            const affichageDetails = match.detailsScores ? 
-                `<div class="text-[9px] text-gray-600 font-medium whitespace-pre-line leading-snug">${match.detailsScores}</div>` : '';
+            // 🚀 NOUVEAU : Transformation des lignes (Alt+Entrée) en petits badges côte à côte
+            let affichageDetails = '';
+            if (match.detailsScores) {
+                const lignesScores = match.detailsScores.split('\n'); // Découpe chaque ligne
+                
+                // On transforme chaque ligne en un petit "badge" arrondi et on les met côte à côte
+                const badges = lignesScores.filter(l => l.trim() !== '').map(l => 
+                    `<span class="inline-flex items-center bg-gray-100 border border-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-semibold whitespace-nowrap">${l.trim()}</span>`
+                ).join('');
+                
+                // flex-wrap permet de les aligner horizontalement, avec un petit espace (gap) entre eux
+                affichageDetails = `<div class="flex flex-wrap gap-1.5">${badges}</div>`;
+            }
 
             const infosSupp = [match.dateHeure, match.lieu].filter(Boolean).join(" • ");
 
@@ -231,12 +238,12 @@
                         </div>
                     </div>
                     
-                    <!-- BAS : Détails sports et Date -->
-                    <div class="mt-2.5 pt-1.5 border-t border-gray-100 flex justify-between items-end gap-2 w-full">
+                    <!-- BAS : Détails sports (Badges alignés) et Date -->
+                    <div class="mt-2.5 pt-2 border-t border-gray-100 flex justify-between items-center gap-2 w-full">
                         <div class="flex-1 pr-2">
                             ${affichageDetails}
                         </div>
-                        <div class="text-[8px] text-gray-400 uppercase tracking-wider font-semibold text-right flex-shrink-0 pb-0.5">
+                        <div class="text-[8px] text-gray-400 uppercase tracking-wider font-semibold text-right flex-shrink-0">
                             ${infosSupp}
                         </div>
                     </div>

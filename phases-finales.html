@@ -19,10 +19,14 @@
             }
         }
     </script>
+    <style>
+        /* Permet de cacher la barre de défilement pour les onglets tout en gardant le scroll au doigt */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 pb-32 md:pb-0 font-sans">
 
-    <!-- HEADER -->
     <header class="bg-gradient-to-r from-bleu-nuit to-indigo-900 text-white p-4 flex justify-between items-center rounded-b-3xl md:rounded-none shadow-md">
         <img src="logo intra.png" alt="Logo Intras" class="w-12 h-12 rounded-full object-cover border border-white/30 bg-gray-200/20">
         <div class="text-center">
@@ -41,7 +45,6 @@
 
     <main class="p-4 mt-4 space-y-4 max-w-4xl mx-auto">
         
-        <!-- ONGLETS POULES / FINALES -->
         <div class="flex justify-center mb-4">
             <div class="bg-gray-200 rounded-xl p-1 inline-flex w-full max-w-sm shadow-inner">
                 <a href="classements.html" class="flex-1 text-center py-2 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">📊 Poules</a>
@@ -49,16 +52,14 @@
             </div>
         </div>
 
-        <!-- ZONE D'AFFICHAGE DU TABLEAU (BRACKET) -->
         <section class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
-                <h3 id="titre-phase" class="font-bold text-gray-800 text-lg uppercase tracking-wide">Chargement...</h3>
-                <div class="text-xs text-blue-600 font-semibold space-x-2 flex">
-                    <button id="btn-prev" onclick="phasePrecedente()" class="hover:underline opacity-50 cursor-not-allowed">tour préc.</button>
-                    <span class="text-gray-300">|</span>
-                    <button id="btn-next" onclick="phaseSuivante()" class="hover:underline opacity-50 cursor-not-allowed">tour suiv.</button>
+            <div class="flex flex-col border-b border-gray-200 bg-gray-50">
+                <div class="px-4 py-3 pb-2 flex justify-between items-center">
+                    <h3 id="titre-phase" class="font-bold text-gray-800 text-lg uppercase tracking-wide">Chargement...</h3>
                 </div>
+                <div class="flex overflow-x-auto space-x-2 px-4 pb-3 scrollbar-hide" id="phases-tabs">
+                    </div>
             </div>
 
             <div id="matchs-container" class="p-4 bg-gray-50/50">
@@ -68,7 +69,6 @@
         </section>
     </main>
 
-    <!-- BARRE DE NAVIGATION MOBILE -->
     <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around p-2 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
         <a href="index.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">🏠</span><span class="text-[10px] mt-1">ACCUEIL</span></a>
         <a href="planning.html" class="flex flex-col items-center text-gray-400 hover:text-bleu-nuit"><span class="text-xl">📅</span><span class="text-[10px] mt-1">PLANNING</span></a>
@@ -149,6 +149,7 @@
                     afficherPhaseActuelle();
                 } else {
                     document.getElementById('matchs-container').innerHTML = '<p class="text-center text-gray-500 py-8">Aucun match trouvé. Vérifiez le lien CSV.</p>';
+                    document.getElementById('titre-phase').innerText = "Arbre vide";
                 }
 
             } catch (erreur) {
@@ -157,18 +158,10 @@
             }
         }
 
-        function phasePrecedente() {
-            if (indexPhaseActuelle > 0) {
-                indexPhaseActuelle--;
-                afficherPhaseActuelle();
-            }
-        }
-
-        function phaseSuivante() {
-            if (indexPhaseActuelle < phasesDisponibles.length - 1) {
-                indexPhaseActuelle++;
-                afficherPhaseActuelle();
-            }
+        // Nouvelle fonction pour changer de phase via les onglets
+        function changerPhase(index) {
+            indexPhaseActuelle = index;
+            afficherPhaseActuelle();
         }
 
         function creerCarteMatch(match) {
@@ -182,7 +175,6 @@
             let eq1Color = "bg-or";
             let eq2Color = "bg-bleu-nuit";
 
-            // Calcul du vainqueur
             const numS1 = parseInt(affScore1);
             const numS2 = parseInt(affScore2);
             if (!isNaN(numS1) && !isNaN(numS2)) {
@@ -200,17 +192,12 @@
                 s1Bold = "font-bold text-gray-800"; s2Bold = "font-bold text-gray-800";
             }
 
-            // 🚀 NOUVEAU : Transformation des lignes (Alt+Entrée) en petits badges côte à côte
             let affichageDetails = '';
             if (match.detailsScores) {
-                const lignesScores = match.detailsScores.split('\n'); // Découpe chaque ligne
-                
-                // On transforme chaque ligne en un petit "badge" arrondi et on les met côte à côte
+                const lignesScores = match.detailsScores.split('\n'); 
                 const badges = lignesScores.filter(l => l.trim() !== '').map(l => 
                     `<span class="inline-flex items-center bg-gray-100 border border-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-semibold whitespace-nowrap">${l.trim()}</span>`
                 ).join('');
-                
-                // flex-wrap permet de les aligner horizontalement, avec un petit espace (gap) entre eux
                 affichageDetails = `<div class="flex flex-wrap gap-1.5">${badges}</div>`;
             }
 
@@ -218,8 +205,6 @@
 
             return `
                 <div class="bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between min-h-[5.5rem] w-full">
-                    
-                    <!-- HAUT : Noms des équipes et Scores Globaux -->
                     <div class="flex flex-col space-y-1.5 w-full">
                         <div class="flex justify-between items-center w-full">
                             <div class="flex items-start space-x-1.5 min-w-0 pr-2">
@@ -228,7 +213,6 @@
                             </div>
                             <div class="${s1Bold} text-[11px] sm:text-xs text-right w-6 flex-shrink-0">${affScore1}</div>
                         </div>
-                        
                         <div class="flex justify-between items-center w-full">
                             <div class="flex items-start space-x-1.5 min-w-0 pr-2">
                                 <div class="w-1.5 h-3.5 ${eq2Color} rounded-sm flex-shrink-0 mt-0.5"></div>
@@ -237,8 +221,6 @@
                             <div class="${s2Bold} text-[11px] sm:text-xs text-right w-6 flex-shrink-0">${affScore2}</div>
                         </div>
                     </div>
-                    
-                    <!-- BAS : Détails sports (Badges alignés) et Date -->
                     <div class="mt-2.5 pt-2 border-t border-gray-100 flex justify-between items-center gap-2 w-full">
                         <div class="flex-1 pr-2">
                             ${affichageDetails}
@@ -254,18 +236,33 @@
         function afficherPhaseActuelle() {
             const container = document.getElementById('matchs-container');
             const titre = document.getElementById('titre-phase');
-            const btnPrev = document.getElementById('btn-prev');
-            const btnNext = document.getElementById('btn-next');
+            const tabsContainer = document.getElementById('phases-tabs');
 
             if (phasesDisponibles.length === 0) return;
 
             const nomPhase = phasesDisponibles[indexPhaseActuelle];
             titre.innerText = nomPhase;
 
-            btnPrev.className = indexPhaseActuelle === 0 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline cursor-pointer";
-            btnNext.className = indexPhaseActuelle === phasesDisponibles.length - 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline cursor-pointer";
+            // Générer la navigation par onglets "pilules"
+            let tabsHtml = '';
+            phasesDisponibles.forEach((phase, index) => {
+                const isActive = index === indexPhaseActuelle;
+                const baseClasses = "px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors border";
+                const colorClasses = isActive ? "bg-bleu-nuit text-white border-transparent" : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-gray-800";
+                tabsHtml += `<button onclick="changerPhase(${index})" class="${baseClasses} ${colorClasses}">${phase.toUpperCase()}</button>`;
+            });
+            tabsContainer.innerHTML = tabsHtml;
 
             const matchsDeLaPhase = tousLesMatchs.filter(m => m.phase === nomPhase);
+            
+            let aUneProchainePhase = indexPhaseActuelle < phasesDisponibles.length - 1;
+            let matchsProchainePhase = [];
+            let nomProchainePhase = "";
+            if (aUneProchainePhase) {
+                nomProchainePhase = phasesDisponibles[indexPhaseActuelle + 1];
+                matchsProchainePhase = tousLesMatchs.filter(m => m.phase === nomProchainePhase);
+            }
+
             let html = '';
 
             for (let i = 0; i < matchsDeLaPhase.length; i += 2) {
@@ -273,23 +270,57 @@
                 const m2 = matchsDeLaPhase[i+1];
 
                 if (m2) {
+                    const indexNextMatch = i / 2;
+                    const nextMatch = aUneProchainePhase ? matchsProchainePhase[indexNextMatch] : null;
+                    
+                    let contenuTourSuivant = '';
+                    
+                    if (nextMatch) {
+                        contenuTourSuivant = `
+                            <div class="bg-gray-100 border border-gray-200/80 p-2 rounded-lg text-left flex flex-col justify-center min-h-[4.5rem] shadow-sm w-full relative z-10">
+                                <span class="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-1.5 text-center">${nomProchainePhase}</span>
+                                <div class="flex flex-col space-y-1.5">
+                                    <div class="flex items-start space-x-1.5 min-w-0">
+                                        <div class="w-1.5 h-3 bg-or rounded-sm flex-shrink-0 mt-0.5"></div>
+                                        <span class="font-bold text-gray-700 text-[9px] leading-tight break-words">${nextMatch.eq1}</span>
+                                    </div>
+                                    <div class="flex items-start space-x-1.5 min-w-0">
+                                        <div class="w-1.5 h-3 bg-bleu-nuit rounded-sm flex-shrink-0 mt-0.5"></div>
+                                        <span class="font-bold text-gray-700 text-[9px] leading-tight break-words">${nextMatch.eq2}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (aUneProchainePhase) {
+                        contenuTourSuivant = `
+                            <div class="bg-gray-200/50 border border-gray-200/80 p-2 rounded-lg text-center flex flex-col justify-center items-center min-h-[4rem] shadow-inner w-full relative z-10">
+                                <span class="text-[8px] text-gray-500 font-bold uppercase tracking-widest">${nomProchainePhase}</span>
+                                <span class="text-gray-400 font-bold mt-1 text-[9px]">À définir</span>
+                            </div>
+                        `;
+                    } else {
+                         contenuTourSuivant = `
+                            <div class="bg-gray-200/50 border border-gray-200/80 p-2 rounded-lg text-center flex flex-col justify-center items-center min-h-[4rem] shadow-inner w-full relative z-10">
+                                <span class="text-[8px] text-gray-500 font-bold uppercase tracking-widest">Tour suivant</span>
+                                <span class="text-gray-400 font-bold mt-1 text-[9px]">À définir</span>
+                            </div>
+                        `;
+                    }
+
                     html += `
-                    <div class="flex mb-8 w-full">
+                    <div class="flex mb-8 w-full items-center">
                         <div class="w-6/12 sm:w-5/12 flex flex-col justify-between space-y-4 relative z-10">
                             ${creerCarteMatch(m1)}
                             ${creerCarteMatch(m2)}
                         </div>
                         
-                        <div class="w-1/12 sm:w-2/12 relative flex-shrink-0">
+                        <div class="w-1/12 sm:w-2/12 relative flex-shrink-0 self-stretch">
                             <div class="absolute top-[25%] bottom-[25%] left-0 w-1/2 border-t-2 border-b-2 border-r-2 border-gray-300 rounded-r-lg"></div>
                             <div class="absolute top-[50%] left-[50%] right-0 border-t-2 border-gray-300"></div>
                         </div>
                         
                         <div class="w-5/12 flex flex-col justify-center pl-1">
-                            <div class="bg-gray-200/50 border border-gray-200/80 p-2 rounded-lg text-center flex flex-col justify-center items-center min-h-[4rem] shadow-inner">
-                                <span class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Tour suivant</span>
-                                <span class="text-gray-400 font-bold mt-1">-</span>
-                            </div>
+                            ${contenuTourSuivant}
                         </div>
                     </div>
                     `;
